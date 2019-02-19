@@ -19,6 +19,11 @@ namespace Gloom
     public:
         Shader()            { mProgram = glCreateProgram(); }
 
+        // hack?:
+        GLint location(std::string const& name) {
+            return glGetUniformLocation(mProgram, name.c_str());
+        }
+
         // Public member functions
         void   activate()   { glUseProgram(mProgram); }
         void   deactivate() { glUseProgram(0); }

@@ -12,6 +12,7 @@
 #include <SFML/Audio/Sound.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <string>
 #include "gamelogic.h"
 #include "sceneGraph.hpp"
 
@@ -32,6 +33,8 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
+
+SceneNode* lightNode[3];
 
 double ballRadius = 3.0f;
 
@@ -55,7 +58,7 @@ bool hasLost = false;
 bool jumpedToNextFrame = false;
 
 // Modify if you want the music to start further on in the track. Measured in seconds.
-const float debug_startTime = 0;
+const float debug_startTime = 45;
 double totalElapsedTime = debug_startTime;
 
 
@@ -108,7 +111,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     unsigned int padVAO = generateBuffer(pad);
 
     rootNode = createSceneNode();
-    boxNode = createSceneNode();
+    boxNode = createSceneNode() ;
     padNode = createSceneNode();
     ballNode = createSceneNode();
 
@@ -125,12 +128,28 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->vertexArrayObjectID = ballVAO;
     ballNode->VAOIndexCount = sphere.indices.size();
 
+    // task 1a, add point lights
+    for (int i = 0; i<3; i++) {
+        lightNode[i] = createSceneNode();
+        lightNode[i]->nodeType = SceneNodeType::POINT_LIGHT;
+        lightNode[i]->lightID = i;
+    }
+    rootNode->children.push_back(lightNode[0]);
+    rootNode->children.push_back(lightNode[1]);
+    ballNode->children.push_back(lightNode[2]);
+    lightNode[0]->position = {boxDimensions.x/2 - 10, boxDimensions.y/2 - 10, boxDimensions.z/2 - 10};
+    lightNode[1]->position = {300,300,400};
+    lightNode[2]->position = {0, 0, 0};
+
+    lightNode[1]->nodeType = SPOT_LIGHT;
+    padNode->targeted_by = lightNode[1];
+
     getTimeDeltaSeconds();
 
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
-void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
+void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar, glm::mat4 V, glm::mat4 P) {
 
     glm::mat4 transformationMatrix(1.0);
 
@@ -146,17 +165,30 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
                     * glm::scale(glm::mat4(1.0), node->scale);
             break;
         case POINT_LIGHT:
-
-            break;
         case SPOT_LIGHT:
-
+            transformationMatrix =
+                    glm::translate(glm::mat4(1.0), node->position);
             break;
     }
+    glm::mat4 M = transformationThusFar * transformationMatrix;
+    glm::mat4 MV = V*M;
 
-    node->currentTransformationMatrix = transformationThusFar * transformationMatrix;
+    node->currentTransformationMatrixMV = MV;
+    node->currentTransformationMatrix = P*MV;
+    node->currentTransformationMatrixMVnormal = glm::inverse(glm::transpose(MV));
 
     for(SceneNode* child : node->children) {
-        updateNodeTransformations(child, node->currentTransformationMatrix);
+        updateNodeTransformations(child, M, V, P);
+    }
+
+    if (node->targeted_by != nullptr) {
+        assert(node->targeted_by->nodeType == SPOT_LIGHT);
+        node->targeted_by->rotation = glm::vec3(MV*glm::vec4(node->position, 1.0));
+
+        //std::cout << node->targeted_by->rotation[0]
+        //    << " " << node->targeted_by->rotation[1]
+        //    << " " << node->targeted_by->rotation[2]
+        //    << std::endl;
     }
 }
 
@@ -295,9 +327,7 @@ void updateFrame(GLFWwindow* window) {
                                 * glm::rotate(glm::mat4(1.0), 0.2f, glm::vec3(1, 0, 0))
                                 * glm::rotate(glm::mat4(1.0), float(M_PI), glm::vec3(0, 1, 0));
 
-    glm::mat4 VP = projection * cameraTransform;
-
-    updateNodeTransformations(rootNode, VP);
+    updateNodeTransformations(rootNode, glm::mat4(1.0), cameraTransform, projection);
 
     boxNode->position = {-boxDimensions.x / 2, -boxDimensions.y / 2 - 15, boxDimensions.z - 10};
     padNode->position = {-boxDimensions.x / 2 + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),
@@ -313,6 +343,8 @@ void updateFrame(GLFWwindow* window) {
 
 void renderNode(SceneNode* node) {
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMV));
+    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMVnormal));
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -321,12 +353,18 @@ void renderNode(SceneNode* node) {
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
             break;
-        case POINT_LIGHT:
-
-            break;
         case SPOT_LIGHT:
+        case POINT_LIGHT: {
+            std::string pre = "light[" + std::to_string(node->lightID) + "]";
+
+            glUniform3fv(shader->location(pre+".position"), 1, glm::value_ptr(node->position));
+            glUniformMatrix4fv(shader->location(pre+".MV"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMV));
+
+            glUniform1i(shader->location(pre+".is_spot"), node->nodeType == SPOT_LIGHT);
+            glUniform3fv(shader->location(pre+".spot_target"), 1, glm::value_ptr(node->rotation));
 
             break;
+        }
     }
 
     for(SceneNode* child : node->children) {
