@@ -4,6 +4,9 @@
 SceneNode* createSceneNode() {
 	return new SceneNode();
 }
+SceneNode* createSceneNode(SceneNodeType type) {
+	return new SceneNode(type);
+}
 
 // Add a child node to its parent's list of children
 void addChild(SceneNode* parent, SceneNode* child) {
@@ -26,4 +29,3 @@ void printNode(SceneNode* node) {
 		node->referencePoint.x, node->referencePoint.y, node->referencePoint.z, 
 		node->vertexArrayObjectID);
 }
-

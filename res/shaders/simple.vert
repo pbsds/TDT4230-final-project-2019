@@ -2,18 +2,33 @@
 
 in layout(location = 0) vec3 position;
 in layout(location = 1) vec3 normal_in;
+in layout(location = 2) vec2 UV;
+in layout(location = 3) vec3 tangent;
+in layout(location = 4) vec3 bitangent;
 
-uniform layout(location = 3) mat4 MVP;
-uniform layout(location = 4) mat4 MV;
-uniform layout(location = 5) mat4 MVnormal;
+uniform layout(location = 6) mat4 MVP;
+uniform layout(location = 7) mat4 MV;
+uniform layout(location = 8) mat4 MVnormal;
 
+//named
+uniform bool isIlluminated;
+uniform bool isTextured;
+uniform bool isNormalMapped;
 
 out layout(location = 0) vec3 normal_out;
 out layout(location = 1) vec3 vertex_out;
+out layout(location = 2) vec2 uv_out;
+out layout(location = 3) mat3 TBN;
 
-void main()
-{
+void main() {
+    TBN = mat3(
+        normalize(vec3(MV * vec4(tangent,   0.0))),
+        normalize(vec3(MV * vec4(bitangent, 0.0))),
+        normalize(vec3(MV * vec4(normal_in, 0.0)))
+    );
+    
     normal_out = normalize(vec3(MVnormal * vec4(normal_in, 1.0f)));
     vertex_out = vec3(MV*vec4(position, 1.0f));
+    uv_out = UV;
     gl_Position =  MVP * vec4(position, 1.0f);
 }

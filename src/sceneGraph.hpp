@@ -14,7 +14,7 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT
+	GEOMETRY, POINT_LIGHT, SPOT_LIGHT, HUD, TEXTURED_GEOMETRY, NORMAL_TEXTURED_GEOMETRY
 };
 
 // In case you haven't got much experience with C or C++, let me explain this "typedef" you see below.
@@ -33,6 +33,12 @@ struct SceneNode {
 
         nodeType = GEOMETRY;
 		targeted_by = nullptr;
+		
+		isIlluminated = true;
+		isInverted = false;
+	}
+	SceneNode(SceneNodeType type) : SceneNode() {
+		nodeType = type;
 	}
 
 	// A list of all children that belong to this node.
@@ -55,6 +61,12 @@ struct SceneNode {
 	// The ID of the VAO containing the "appearance" of this SceneNode.
 	int vertexArrayObjectID;
 	unsigned int VAOIndexCount;
+	
+	unsigned int diffuseTextureID;
+	unsigned int normalTextureID;
+	
+	bool isIlluminated;
+	bool isInverted;
 
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
@@ -67,6 +79,7 @@ struct SceneNode {
 // Struct for keeping track of 2D coordinates
 
 SceneNode* createSceneNode();
+SceneNode* createSceneNode(SceneNodeType type);
 void addChild(SceneNode* parent, SceneNode* child);
 void printNode(SceneNode* node);
 

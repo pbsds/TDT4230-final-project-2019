@@ -9,6 +9,8 @@
 #include <utilities/mesh.h>
 #include <utilities/shapes.h>
 #include <utilities/glutils.h>
+#include <utilities/glfont.h>
+#include <utilities/imageLoader.hpp>
 #include <SFML/Audio/Sound.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -33,6 +35,8 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
+SceneNode* hudNode;
+SceneNode* textNode;
 
 SceneNode* lightNode[3];
 
@@ -61,7 +65,11 @@ bool jumpedToNextFrame = false;
 const float debug_startTime = 45;
 double totalElapsedTime = debug_startTime;
 
+// textures
 
+PNGImage t_charmap;
+PNGImage t_cobble_diff;
+PNGImage t_cobble_normal;
 
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
@@ -107,20 +115,37 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh sphere = generateSphere(1.0, 40, 40);
 
     unsigned int ballVAO = generateBuffer(sphere);
-    unsigned int boxVAO = generateBuffer(box);
+    unsigned int boxVAO = generateBuffer(box, true);
     unsigned int padVAO = generateBuffer(pad);
 
+    // textures
+    t_charmap       = loadPNGFile("../res/textures/charmap.png");
+    t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
+    t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
+
+    unsigned int t_charmapID = generateTexture(t_charmap);
+    unsigned int t_cobble_diffID = generateTexture(t_cobble_diff);
+    unsigned int t_cobble_normalID = generateTexture(t_cobble_normal);
+
     rootNode = createSceneNode();
-    boxNode = createSceneNode() ;
+    boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);
     padNode = createSceneNode();
     ballNode = createSceneNode();
+    hudNode = createSceneNode(HUD);
+    textNode = createSceneNode(TEXTURED_GEOMETRY);
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+    rootNode->children.push_back(hudNode);
+
+    hudNode->children.push_back(textNode);
+    //rootNode->children.push_back(textNode);
 
     boxNode->vertexArrayObjectID = boxVAO;
     boxNode->VAOIndexCount = box.indices.size();
+    boxNode->diffuseTextureID = t_cobble_diffID;
+    boxNode->normalTextureID = t_cobble_normalID;
 
     padNode->vertexArrayObjectID = padVAO;
     padNode->VAOIndexCount = pad.indices.size();
@@ -138,12 +163,24 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(lightNode[1]);
     ballNode->children.push_back(lightNode[2]);
     lightNode[0]->position = {boxDimensions.x/2 - 10, boxDimensions.y/2 - 10, boxDimensions.z/2 - 10};
-    lightNode[1]->position = {300,300,400};
+    lightNode[1]->position = {-300, -500, 300};
     lightNode[2]->position = {0, 0, 0};
 
     lightNode[1]->nodeType = SPOT_LIGHT;
     padNode->targeted_by = lightNode[1];
-
+    
+    
+    // hud
+    Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
+    textNode->position = glm::vec3(-1.0, 0.0, 0.0);
+    textNode->rotation = glm::vec3(0.0, 0.0, 0.0);
+    textNode->vertexArrayObjectID = generateBuffer(hello_world);
+    textNode->VAOIndexCount = hello_world.indices.size();
+    textNode->diffuseTextureID = t_charmapID;
+    textNode->isIlluminated = false;
+    textNode->isInverted = true;
+    
+    
     getTimeDeltaSeconds();
 
     std::cout << "Ready. Click to start!" << std::endl;
@@ -154,6 +191,14 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar,
     glm::mat4 transformationMatrix(1.0);
 
     switch(node->nodeType) {
+        case HUD:
+            // We orthographic now, bitches!
+            // set orthographic VP
+            V = glm::mat4(1.0);
+            P = glm::ortho(-float(windowWidth) / float(windowHeight), float(windowWidth) / float(windowHeight), -1.0f, 1.0f);//, -10.0f, 120.0f);
+            break;
+        case NORMAL_TEXTURED_GEOMETRY:
+        case TEXTURED_GEOMETRY:
         case GEOMETRY:
             transformationMatrix =
                     glm::translate(glm::mat4(1.0), node->position)
@@ -342,13 +387,25 @@ void updateFrame(GLFWwindow* window) {
 
 
 void renderNode(SceneNode* node) {
-    glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMV));
-    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMVnormal));
+    glUniformMatrix4fv(6, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+    glUniformMatrix4fv(7, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMV));
+    glUniformMatrix4fv(8, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMVnormal));
+    glUniform1ui(shader->location("isNormalMapped"), false);
+    glUniform1ui(shader->location("isTextured"), false);
 
     switch(node->nodeType) {
+        case NORMAL_TEXTURED_GEOMETRY:
+            glUniform1ui(shader->location("isNormalMapped"), true);
+            glBindTextureUnit(1, node->normalTextureID);
+            [[fallthrough]];
+        case TEXTURED_GEOMETRY:
+            glUniform1ui(shader->location("isTextured"), true);
+            glBindTextureUnit(0, node->diffuseTextureID);
+            [[fallthrough]];
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
+                glUniform1ui(shader->location("isIlluminated"), node->isIlluminated);
+                glUniform1ui(shader->location("isInverted"), node->isInverted);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
@@ -365,6 +422,8 @@ void renderNode(SceneNode* node) {
 
             break;
         }
+        case HUD:
+            break;
     }
 
     for(SceneNode* child : node->children) {

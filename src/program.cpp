@@ -24,6 +24,10 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
 
+    //enable alpha
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Set default colour after clearing the colour buffer
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
 
