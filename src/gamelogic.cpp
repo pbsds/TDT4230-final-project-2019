@@ -120,18 +120,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
 
-    uint ballVAO = generateBuffer(sphere);
-    uint boxVAO = generateBuffer(box, true);
-    uint padVAO = generateBuffer(pad);
-
     // textures
     t_charmap       = loadPNGFile("../res/textures/charmap.png");
     t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
     t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
-
-    uint t_charmapID = generateTexture(t_charmap);
-    uint t_cobble_diffID = generateTexture(t_cobble_diff);
-    uint t_cobble_normalID = generateTexture(t_cobble_normal);
 
     rootNode = createSceneNode();
     boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);
@@ -148,21 +140,15 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     hudNode->children.push_back(textNode);
     //rootNode->children.push_back(textNode);
 
-    boxNode->vertexArrayObjectID = boxVAO;
-    boxNode->VAOIndexCount = box.indices.size();
-    boxNode->diffuseTextureID = t_cobble_diffID;
-    boxNode->normalTextureID = t_cobble_normalID;
+    boxNode->setMesh(&box);
+    boxNode->setTexture(&t_cobble_diff, &t_cobble_normal);
 
-    padNode->vertexArrayObjectID = padVAO;
-    padNode->VAOIndexCount = pad.indices.size();
-
-    ballNode->vertexArrayObjectID = ballVAO;
-    ballNode->VAOIndexCount = sphere.indices.size();
+    padNode->setMesh(&pad);
+    ballNode->setMesh(&sphere);
 
     // task 1a, add point lights
     for (int i = 0; i<3; i++) {
-        lightNode[i] = createSceneNode();
-        lightNode[i]->nodeType = SceneNodeType::POINT_LIGHT;
+        lightNode[i] = createSceneNode(POINT_LIGHT);
         lightNode[i]->lightID = i;
     }
     rootNode->children.push_back(lightNode[0]);
@@ -182,7 +168,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     textNode->rotation = vec3(0.0, 0.0, 0.0);
     textNode->vertexArrayObjectID = generateBuffer(hello_world);
     textNode->VAOIndexCount = hello_world.indices.size();
-    textNode->diffuseTextureID = t_charmapID;
+    textNode->setTexture(&t_charmap);
     textNode->isIlluminated = false;
     textNode->isInverted = true;
     
@@ -235,11 +221,6 @@ void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4
     if (node->targeted_by != nullptr) {
         assert(node->targeted_by->nodeType == SPOT_LIGHT);
         node->targeted_by->rotation = vec3(MV*glm::vec4(node->position, 1.0));
-
-        //std::cout << node->targeted_by->rotation[0]
-        //    << " " << node->targeted_by->rotation[1]
-        //    << " " << node->targeted_by->rotation[2]
-        //    << std::endl;
     }
 }
 

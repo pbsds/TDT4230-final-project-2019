@@ -8,60 +8,87 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
+#include <map>
 #include <stack>
 #include <stdbool.h>
+#include <utilities/glutils.h>
 #include <utilities/shader.hpp>
 #include <vector>
+
+using glm::vec3;
+using glm::mat4;
+using std::map;
+using std::vector;
+typedef unsigned int uint;
 
 enum SceneNodeType {
 	GEOMETRY, POINT_LIGHT, SPOT_LIGHT, HUD, TEXTURED_GEOMETRY, NORMAL_TEXTURED_GEOMETRY
 };
 
 struct SceneNode {
-	SceneNode() {
-		position = glm::vec3(0, 0, 0);
-		rotation = glm::vec3(0, 0, 0);
-		scale = glm::vec3(1, 1, 1);
+	SceneNode(SceneNodeType type = GEOMETRY) {
+		position = vec3(0, 0, 0);
+		rotation = vec3(0, 0, 0);
+		scale = vec3(1, 1, 1);
 
-        referencePoint = glm::vec3(0, 0, 0);
+        referencePoint = vec3(0, 0, 0);
         vertexArrayObjectID = -1;
         VAOIndexCount = 0;
 
-        nodeType = GEOMETRY;
+        nodeType = type;
 		targeted_by = nullptr;
 		
 		isIlluminated = true;
 		isInverted = false;
 	}
-	SceneNode(SceneNodeType type) : SceneNode() {
-		nodeType = type;
-	}
+	
+	void setMesh(Mesh* mesh) {
+		static map<Mesh*, int> cache;
 
-	std::vector<SceneNode*> children;
+		if (cache.find(mesh) == cache.end())
+			cache[mesh] = generateBuffer(*mesh, nodeType==NORMAL_TEXTURED_GEOMETRY);
+
+		vertexArrayObjectID = cache[mesh];
+		VAOIndexCount = mesh->indices.size();
+	}
+	void setTexture(PNGImage* diffuse, PNGImage* normal = nullptr) {
+		static map<PNGImage*, int> cache;
+
+		if (cache.find(diffuse) == cache.end()) cache[diffuse] = generateTexture(*diffuse);
+		diffuseTextureID = cache[diffuse];
+		
+		if (!normal) return;
+		if (cache.find(normal)  == cache.end()) cache[normal]  = generateTexture(*normal);
+		normalTextureID  = cache[normal];
+	}
+	
+	vector<SceneNode*> children;
 
 	// The node's position and rotation relative to its parent
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::vec3 scale;
+	vec3 position;
+	vec3 rotation;
+	vec3 scale;
 
 	// set this if the shape uses a custom shader other than the default one
 	Gloom::Shader* shader = nullptr;
 	
 	// A transformation matrix representing the transformation of the node's location relative to its parent. This matrix is updated every frame.
-	glm::mat4 MVP; // MVP
-	glm::mat4 MV; // MV
-	glm::mat4 MVnormal; // transpose(inverse(MV))
+	mat4 MVP; // MVP
+	mat4 MV; // MV
+	mat4 MVnormal; // transpose(inverse(MV))
 
-	// The location of the node's reference point
-	glm::vec3 referencePoint;
+	// The location of the node's reference point (center of rotation)
+	vec3 referencePoint;
 
-	// The ID of the VAO containing the "appearance" of this SceneNode.
+	// VAO IDs refering to a loaded Mesh and its length
 	int vertexArrayObjectID;
-	unsigned int VAOIndexCount;
+	uint VAOIndexCount;
 	
-	unsigned int diffuseTextureID;
-	unsigned int normalTextureID;
+	// textures
+	uint diffuseTextureID;
+	uint normalTextureID;
 	
+	// shader flags
 	bool isIlluminated;
 	bool isInverted;
 
@@ -69,7 +96,7 @@ struct SceneNode {
 	SceneNodeType nodeType;
 
 	// for lights:
-	unsigned int lightID;
+	uint lightID;
 	SceneNode* targeted_by; // spot
 };
 
