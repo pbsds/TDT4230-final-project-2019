@@ -395,14 +395,13 @@ void updateFrame(GLFWwindow* window) {
 
 void renderNode(SceneNode* node) {
     struct Light { // lights as stored in the shader
-    	glm::vec3 position;
-        glm::mat4 MV;
+        // coordinates in MV space
+        vec3 position;
+        vec3 spot_target;
         bool is_spot;
-        glm::vec3 spot_target; // MV space coordinates
         
         void push_to_shader(Gloom::Shader* shader, uint id) {
             #define l(x) shader->location("light[" + std::to_string(id) + "]." + #x)
-                glUniformMatrix4fv(l(MV)         , 1, GL_FALSE, glm::value_ptr(MV));
                 glUniform3fv      (l(position)   , 1, glm::value_ptr(position));
                 glUniform3fv      (l(spot_target), 1, glm::value_ptr(spot_target));
                 glUniform1i       (l(is_spot)    ,    is_spot);
@@ -449,8 +448,7 @@ void renderNode(SceneNode* node) {
         case SPOT_LIGHT:
         case POINT_LIGHT: {
             uint id = node->lightID;
-            lights[id].position    = node->position;
-            lights[id].MV          = node->MV;
+            lights[id].position    = vec3(node->MV * glm::vec4(node->position, 1.0));
             lights[id].is_spot     = node->nodeType == SPOT_LIGHT;
             lights[id].spot_target = node->rotation;
             lights[id].push_to_shader(s, id);

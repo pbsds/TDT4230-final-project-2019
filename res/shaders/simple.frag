@@ -18,11 +18,10 @@ uniform bool isNormalMapped;
 uniform bool isInverted;
 
 // lights
-struct Light {
+struct Light { // coordinates in MV space
     vec3 position;
-    mat4 MV;
+    vec3 spot_target; 
     bool is_spot; // false means point light
-    vec3 spot_target; // MV space coordinates for spots
 };
 
 //named 
@@ -53,13 +52,13 @@ void main_(vec4 basecolor) {
     float specular_intensity = 0.0;
 
     for (int i = 0; i<3; i++) {
-        vec3 L = vec3(light[i].MV * vec4(light[i].position, 1.0f)) - vertex;
+        vec3 L = light[i].position - vertex;
         float l = length(L);
         float attenuation = clamp(2000/(1 + 1*l + 0.1*l*l), 0.0, 1.25);
         L = normalize(L);
 
         if (light[i].is_spot) {
-            vec3 L2 = normalize(vec3(light[i].MV * vec4(light[i].position, 1.0f)) - light[i].spot_target);
+            vec3 L2 = normalize(light[i].position - light[i].spot_target);
             if (dot(L2, L) < spot_cuttof_angle) {
                 continue;
             }
@@ -101,11 +100,6 @@ void main() {
         }
     } else {
         color = texture(diffuseTexture, UV);
-        
     }
-    if (isInverted) {
-        color.r = 1 - color.r;
-        color.g = 1 - color.g;
-        color.b = 1 - color.b;
-    }
+    if (isInverted) color.rgb = 1 - color.rgb;
 }
