@@ -44,6 +44,9 @@ struct SceneNode {
 	glm::vec3 rotation;
 	glm::vec3 scale;
 
+	// set this if the shape uses a custom shader other than the default one
+	Gloom::Shader* shader = nullptr;
+	
 	// A transformation matrix representing the transformation of the node's location relative to its parent. This matrix is updated every frame.
 	glm::mat4 MVP; // MVP
 	glm::mat4 MV; // MV

@@ -48,7 +48,10 @@ double ballRadius = 3.0f;
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::Sound* sound;
 sf::SoundBuffer* buffer;
-Gloom::Shader* shader;
+Gloom::Shader* default_shader;
+Gloom::Shader* test_shader;
+Gloom::Shader* plain_shader;
+Gloom::Shader* post_shader;
 
 const vec3 boxDimensions(180, 90, 50);
 const vec3 padDimensions(30, 3, 40);
@@ -109,10 +112,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
-    shader = new Gloom::Shader();
-    shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-    shader->activate();
-
+    // load shaders
+    default_shader = new Gloom::Shader();
+    default_shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
+    
     Mesh box = generateBox(boxDimensions.x, boxDimensions.y, boxDimensions.z, true);
     Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
@@ -391,39 +394,66 @@ void updateFrame(GLFWwindow* window) {
 
 
 void renderNode(SceneNode* node) {
+    struct Light { // lights as stored in the shader
+    	glm::vec3 position;
+        glm::mat4 MV;
+        bool is_spot;
+        glm::vec3 spot_target; // MV space coordinates
+        
+        void push_to_shader(Gloom::Shader* shader, uint id) {
+            #define l(x) shader->location("light[" + std::to_string(id) + "]." + #x)
+                glUniformMatrix4fv(l(MV)         , 1, GL_FALSE, glm::value_ptr(MV));
+                glUniform3fv      (l(position)   , 1, glm::value_ptr(position));
+                glUniform3fv      (l(spot_target), 1, glm::value_ptr(spot_target));
+                glUniform1i       (l(is_spot)    ,    is_spot);
+            #undef l
+        }
+    };
+    static Light lights[3];
+    static Gloom::Shader* s = nullptr; // The currently active shader
+    
+    // activate the correct shader
+    Gloom::Shader* node_shader = (node->shader != nullptr)
+        ? node->shader
+        : default_shader;
+    if (s != node_shader) {
+        s = node_shader;
+        s->activate();
+        uint i = 0; for (Light l : lights) l.push_to_shader(s, i++);
+    }
+
+    // load uniforms
     glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
     glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
     glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
-    glUniform1ui(shader->location("isNormalMapped"), false);
-    glUniform1ui(shader->location("isTextured"), false);
+    glUniform1ui(s->location("isNormalMapped"), false);
+    glUniform1ui(s->location("isTextured"), false);
 
     switch(node->nodeType) {
         case NORMAL_TEXTURED_GEOMETRY:
-            glUniform1ui(shader->location("isNormalMapped"), true);
+            glUniform1ui(s->location("isNormalMapped"), true);
             glBindTextureUnit(1, node->normalTextureID);
             [[fallthrough]];
         case TEXTURED_GEOMETRY:
-            glUniform1ui(shader->location("isTextured"), true);
+            glUniform1ui(s->location("isTextured"), true);
             glBindTextureUnit(0, node->diffuseTextureID);
             [[fallthrough]];
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
-                glUniform1ui(shader->location("isIlluminated"), node->isIlluminated);
-                glUniform1ui(shader->location("isInverted"), node->isInverted);
+                glUniform1ui(s->location("isIlluminated"), node->isIlluminated);
+                glUniform1ui(s->location("isInverted"), node->isInverted);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
             break;
         case SPOT_LIGHT:
         case POINT_LIGHT: {
-            std::string pre = "light[" + std::to_string(node->lightID) + "]";
-
-            glUniform3fv(shader->location(pre+".position"), 1, glm::value_ptr(node->position));
-            glUniformMatrix4fv(shader->location(pre+".MV"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMV));
-
-            glUniform1i(shader->location(pre+".is_spot"), node->nodeType == SPOT_LIGHT);
-            glUniform3fv(shader->location(pre+".spot_target"), 1, glm::value_ptr(node->rotation));
-
+            uint id = node->lightID;
+            lights[id].position    = node->position;
+            lights[id].MV          = node->MV;
+            lights[id].is_spot     = node->nodeType == SPOT_LIGHT;
+            lights[id].spot_target = node->rotation;
+            lights[id].push_to_shader(s, id);
             break;
         }
         case HUD:

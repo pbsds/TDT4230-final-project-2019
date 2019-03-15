@@ -17,12 +17,12 @@ uniform bool isTextured;
 uniform bool isNormalMapped;
 uniform bool isInverted;
 
-// point lights
+// lights
 struct Light {
     vec3 position;
     mat4 MV;
-    bool is_spot;
-    vec3 spot_target; // MV space coordinates
+    bool is_spot; // false means point light
+    vec3 spot_target; // MV space coordinates for spots
 };
 
 //named 
