@@ -8,4 +8,4 @@ unsigned int generateBuffer(Mesh &mesh, bool isNormalMapped = false);
 
 void addTangents(unsigned int vaoID, Mesh& mesh);
 
-unsigned int generateTexture(PNGImage& texture);
+unsigned int generateTexture(PNGImage& texture, bool mirrored = false);

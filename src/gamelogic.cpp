@@ -72,10 +72,11 @@ const float debug_startTime = 45;
 double totalElapsedTime = debug_startTime;
 
 // textures
-PNGImage t_charmap;
-PNGImage t_cobble_diff;
-PNGImage t_cobble_normal;
-PNGImage t_perlin;
+PNGImage t_charmap       = loadPNGFile("../res/textures/charmap.png");
+PNGImage t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
+PNGImage t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
+PNGImage t_perlin        = makePerlinNoisePNG(1639*2, 44, {0.1, 0.2, 0.3});
+
 
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
@@ -119,12 +120,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh box = generateBox(boxDimensions.x, boxDimensions.y, boxDimensions.z, true);
     Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
-
-    // textures
-    t_charmap       = loadPNGFile("../res/textures/charmap.png");
-    t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
-    t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
-    t_perlin        = makePerlinNoisePNG(1639*2, 44, {0.1, 0.2, 0.3});
 
     rootNode = createSceneNode();
     boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);

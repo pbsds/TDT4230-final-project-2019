@@ -104,13 +104,13 @@ void addTangents(uint vaoID, Mesh& mesh) {
     glEnableVertexAttribArray(4);
 }
 
-uint generateTexture(PNGImage& texture) {
+uint generateTexture(PNGImage& texture, bool mirrored) {
     uint id;
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
     
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (mirrored) ? GL_MIRRORED_REPEAT : GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (mirrored) ? GL_MIRRORED_REPEAT : GL_REPEAT);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
