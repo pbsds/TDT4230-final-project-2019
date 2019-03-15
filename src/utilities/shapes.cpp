@@ -312,3 +312,53 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     mesh.indices = indices;
     return mesh;
 }
+
+Mesh generateSegmentedPlane(float width, float height, uint x_segments, uint y_segments) {
+    // i should perhaps initialize these to the length they should be, but insert is prettier :3
+    vector<vec3> vertices;
+    vector<vec3> normals;
+    vector<vec2> textureCoordinates;
+    vector<uint> indices;
+    
+    float step_x = width/x_segments;
+    float step_y = height/y_segments;
+    float tex_step_x = 1.0/x_segments;
+    float tex_step_y = 1.0/y_segments;
+    uint index_offset = 0;
+    
+    for (uint x = 0; x < x_segments; x++)
+    for (uint y = 0; y < y_segments; y++) {
+        vertices.insert(vertices.end(), {
+            vec3(step_x*(x+0), step_y*(y+0), 0),
+            vec3(step_x*(x+0), step_y*(y+1), 0),
+            vec3(step_x*(x+1), step_y*(y+0), 0),
+            vec3(step_x*(x+1), step_y*(y+1), 0),
+        });
+        normals.insert(vertices.end(), {
+            vec3(0.0, 0.0, 1.0),
+            vec3(0.0, 0.0, 1.0),
+            vec3(0.0, 0.0, 1.0),
+            vec3(0.0, 0.0, 1.0),
+        });
+        textureCoordinates.insert(textureCoordinates.end(), {
+            vec2(tex_step_x*(x+0), tex_step_y*(y+0)),
+            vec2(tex_step_x*(x+0), tex_step_y*(y+1)),
+            vec2(tex_step_x*(x+1), tex_step_y*(y+0)),
+            vec2(tex_step_x*(x+1), tex_step_y*(y+1)),
+        });
+        indices.insert(indices.end(), {
+            index_offset + 0, index_offset + 1, index_offset + 2,
+            index_offset + 1, index_offset + 2, index_offset + 3,
+        });
+        index_offset += 4;
+    }
+
+    Mesh mesh;
+    mesh.vertices = vertices;
+    mesh.normals = normals;
+    mesh.textureCoordinates = textureCoordinates;
+    mesh.indices = indices;
+
+    return mesh;
+
+}
