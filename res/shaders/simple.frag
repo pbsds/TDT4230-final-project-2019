@@ -101,5 +101,5 @@ void main() {
     } else {
         color = texture(diffuseTexture, UV);
     }
-    if (isInverted) color.rgb = 1 - color.rgb;
+    if (isInverted) color.rgb = 1- color.rgb;
 }

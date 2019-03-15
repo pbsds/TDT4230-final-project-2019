@@ -72,7 +72,6 @@ const float debug_startTime = 45;
 double totalElapsedTime = debug_startTime;
 
 // textures
-
 PNGImage t_charmap;
 PNGImage t_cobble_diff;
 PNGImage t_cobble_normal;
@@ -166,8 +165,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
     textNode->position = vec3(-1.0, 0.0, 0.0);
     textNode->rotation = vec3(0.0, 0.0, 0.0);
-    textNode->vertexArrayObjectID = generateBuffer(hello_world);
-    textNode->VAOIndexCount = hello_world.indices.size();
+    textNode->setMesh(&hello_world);
     textNode->setTexture(&t_charmap);
     textNode->isIlluminated = false;
     textNode->isInverted = true;

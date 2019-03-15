@@ -5,15 +5,16 @@
 
 using glm::vec2;
 using std::vector;
+typedef unsigned int uint;
 
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
 PNGImage loadPNGFile(std::string fileName) {
 	vector<unsigned char> png;
 	vector<unsigned char> pixels; //the raw pixels
-	unsigned int width, height;
+	uint width, height;
 
 	//load and decode
-	unsigned error = lodepng::load_file(png, fileName);
+	uint error = lodepng::load_file(png, fileName);
 	if(!error) error = lodepng::decode(pixels, width, height, png);
 
 	//if there's an error, display it
@@ -27,10 +28,10 @@ PNGImage loadPNGFile(std::string fileName) {
 
 	// You're welcome :)
 
-	unsigned int widthBytes = 4 * width;
+	uint widthBytes = 4 * width;
 
-	for(unsigned int row = 0; row < (height / 2); row++) {
-		for(unsigned int col = 0; col < widthBytes; col++) {
+	for(uint row = 0; row < (height / 2); row++) {
+		for(uint col = 0; col < widthBytes; col++) {
 			std::swap(pixels[row * widthBytes + col], pixels[(height - 1 - row) * widthBytes + col]);
 		}
 	}

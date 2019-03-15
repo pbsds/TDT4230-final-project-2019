@@ -6,34 +6,35 @@
 using std::vector;
 using glm::vec3;
 using glm::vec2;
+typedef unsigned int uint;
 
-unsigned int generateBuffer(Mesh &mesh, bool isNormalMapped) {
-    unsigned int vaoID;
+uint generateBuffer(Mesh &mesh, bool isNormalMapped) {
+    uint vaoID;
     glGenVertexArrays(1, &vaoID);
     glBindVertexArray(vaoID);
 
-    unsigned int vertexBufferID;
+    uint vertexBufferID;
     glGenBuffers(1, &vertexBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(vec3), mesh.vertices.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
 
-    unsigned int normalBufferID;
+    uint normalBufferID;
     glGenBuffers(1, &normalBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(vec3), mesh.normals.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(1);
 
-    unsigned int indexBufferID;
+    uint indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(uint), mesh.indices.data(), GL_STATIC_DRAW);
 
     if (mesh.textureCoordinates.empty()) return vaoID;
     
-    unsigned int textureBufferID;
+    uint textureBufferID;
     glGenBuffers(1, &textureBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, textureBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.textureCoordinates.size() * sizeof(vec2), mesh.textureCoordinates.data(), GL_STATIC_DRAW);
@@ -45,11 +46,11 @@ unsigned int generateBuffer(Mesh &mesh, bool isNormalMapped) {
     return vaoID;
 }
 
-void addTangents(unsigned int vaoID, Mesh& mesh) {
+void addTangents(uint vaoID, Mesh& mesh) {
     vector<vec3> tangents(mesh.vertices.size());
     vector<vec3> bitangents(mesh.vertices.size());
     
-    for (unsigned int i = 0; i < mesh.indices.size(); i+=3) {
+    for (uint i = 0; i < mesh.indices.size(); i+=3) {
         const vec3& pos1 = mesh.vertices[mesh.indices[i+0]];
         const vec3& pos2 = mesh.vertices[mesh.indices[i+1]];
         const vec3& pos3 = mesh.vertices[mesh.indices[i+2]];
@@ -88,14 +89,14 @@ void addTangents(unsigned int vaoID, Mesh& mesh) {
     
     glBindVertexArray(vaoID);
     
-    unsigned int tangentBufferID;
+    uint tangentBufferID;
     glGenBuffers(1, &tangentBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, tangentBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(vec3), tangents.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(3);
     
-    unsigned int bitangentBufferID;
+    uint bitangentBufferID;
     glGenBuffers(1, &bitangentBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, bitangentBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(vec3), bitangents.data(), GL_STATIC_DRAW);
@@ -103,8 +104,8 @@ void addTangents(unsigned int vaoID, Mesh& mesh) {
     glEnableVertexAttribArray(4);
 }
 
-unsigned int generateTexture(PNGImage& texture) {
-    unsigned int id;
+uint generateTexture(PNGImage& texture) {
+    uint id;
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
     

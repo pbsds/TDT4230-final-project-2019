@@ -6,9 +6,9 @@
 
 typedef unsigned int uint;
 
-typedef struct PNGImage {
-	unsigned int width, height;
+struct PNGImage {
+	uint width, height;
 	std::vector<unsigned char> pixels; // RGBA
-} PNGImage;
+};
 
 PNGImage loadPNGFile(std::string fileName);
