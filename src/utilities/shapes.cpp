@@ -1,12 +1,17 @@
 #include <iostream>
 #include "shapes.h"
 
+typedef uint uint;
+using glm::vec3;
+using glm::vec2;
+using std::vector;
+
 Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     // Hardcoded. Sue me.
 
     // Edit: well, that backfired..
 
-    std::vector<glm::vec3> vertices = {
+    vector<vec3> vertices = {
             {0,     0,      0},
             {0,     0,      depth},
             {0,     height, depth},
@@ -60,7 +65,7 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     // But for some strange reason the faces are rendered inverted.
     // So to make the assignment work this is the best I can do.
 
-    std::vector<glm::vec3> normals = {
+    vector<vec3> normals = {
             {1.0, 0.0, 0.0},
             {1.0, 0.0, 0.0},
             {1.0, 0.0, 0.0},
@@ -114,7 +119,7 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     float texScaleFactorY = width / depth;
     float texScaleFactorZ = width / height;
     
-    std::vector<glm::vec2> textureCoordinates = {
+    vector<vec2> textureCoordinates = {
             {0, 0},
             {texScaleFactorX, 0},
             {texScaleFactorX, 1},
@@ -166,7 +171,7 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     };
 
 
-    std::vector<unsigned int> indices = {
+    vector<uint> indices = {
             0, 1, 2,
             3, 4, 5,
             6, 7, 8,
@@ -183,7 +188,7 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
 
     if(flipFaces) {
         for(int i = 0; i < 36; i += 3) {
-            unsigned int temp = indices[i + 1];
+            uint temp = indices[i + 1];
             indices[i + 1] = indices[i + 2];
             indices[i + 2] = temp;
 
@@ -203,11 +208,11 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
 }
 
 Mesh generateSphere(float sphereRadius, int slices, int layers) {
-    const unsigned int triangleCount = slices * layers * 2;
+    const uint triangleCount = slices * layers * 2;
 
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
-    std::vector<unsigned int> indices;
+    vector<vec3> vertices;
+    vector<vec3> normals;
+    vector<uint> indices;
 
     vertices.reserve(3 * triangleCount);
     normals.reserve(3 * triangleCount);
@@ -218,7 +223,7 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     const float degreesPerLayer = 180.0 / (float) layers;
     const float degreesPerSlice = 360.0 / (float) slices;
 
-    unsigned int i = 0;
+    uint i = 0;
 
     // Constructing the sphere one layer at a time
     for (int layer = 0; layer < layers; layer++) {

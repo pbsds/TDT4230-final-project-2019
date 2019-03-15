@@ -1,23 +1,26 @@
-#include <chrono>
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
-#include <SFML/Audio/SoundBuffer.hpp>
-#include <utilities/shader.hpp>
-#include <glm/vec3.hpp>
-#include <iostream>
-#include <utilities/timeutils.h>
-#include <utilities/mesh.h>
-#include <utilities/shapes.h>
-#include <utilities/glutils.h>
-#include <utilities/glfont.h>
-#include <utilities/imageLoader.hpp>
-#include <SFML/Audio/Sound.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <string>
 #include "gamelogic.h"
 #include "sceneGraph.hpp"
+#include <GLFW/glfw3.h>
+#include <SFML/Audio/Sound.hpp>
+#include <SFML/Audio/SoundBuffer.hpp>
+#include <chrono>
+#include <glad/glad.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/vec3.hpp>
+#include <iostream>
+#include <string>
+#include <utilities/glfont.h>
+#include <utilities/glutils.h>
+#include <utilities/imageLoader.hpp>
+#include <utilities/mesh.h>
+#include <utilities/shader.hpp>
+#include <utilities/shapes.h>
+#include <utilities/timeutils.h>
 
+using glm::vec3;
+using glm::mat4;
+typedef unsigned int uint;
 
 enum KeyFrameAction {
     BOTTOM, TOP
@@ -28,8 +31,8 @@ enum KeyFrameAction {
 double padPositionX = 0;
 double padPositionY = 0;
 
-unsigned int currentKeyFrame = 0;
-unsigned int previousKeyFrame = 0;
+uint currentKeyFrame = 0;
+uint previousKeyFrame = 0;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
@@ -43,15 +46,15 @@ SceneNode* lightNode[3];
 double ballRadius = 3.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
+sf::Sound* sound;
 sf::SoundBuffer* buffer;
 Gloom::Shader* shader;
-sf::Sound* sound;
 
-const glm::vec3 boxDimensions(180, 90, 50);
-const glm::vec3 padDimensions(30, 3, 40);
+const vec3 boxDimensions(180, 90, 50);
+const vec3 padDimensions(30, 3, 40);
 
-glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
-glm::vec3 ballDirection(1, 1, 0.02f);
+vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
+vec3 ballDirection(1, 1, 0.02f);
 
 const float BallVerticalTravelDistance = boxDimensions.y - 2.0 * ballRadius - padDimensions.y;
 
@@ -114,18 +117,18 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
 
-    unsigned int ballVAO = generateBuffer(sphere);
-    unsigned int boxVAO = generateBuffer(box, true);
-    unsigned int padVAO = generateBuffer(pad);
+    uint ballVAO = generateBuffer(sphere);
+    uint boxVAO = generateBuffer(box, true);
+    uint padVAO = generateBuffer(pad);
 
     // textures
     t_charmap       = loadPNGFile("../res/textures/charmap.png");
     t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
     t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
 
-    unsigned int t_charmapID = generateTexture(t_charmap);
-    unsigned int t_cobble_diffID = generateTexture(t_cobble_diff);
-    unsigned int t_cobble_normalID = generateTexture(t_cobble_normal);
+    uint t_charmapID = generateTexture(t_charmap);
+    uint t_cobble_diffID = generateTexture(t_cobble_diff);
+    uint t_cobble_normalID = generateTexture(t_cobble_normal);
 
     rootNode = createSceneNode();
     boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);
@@ -172,8 +175,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     
     // hud
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
-    textNode->position = glm::vec3(-1.0, 0.0, 0.0);
-    textNode->rotation = glm::vec3(0.0, 0.0, 0.0);
+    textNode->position = vec3(-1.0, 0.0, 0.0);
+    textNode->rotation = vec3(0.0, 0.0, 0.0);
     textNode->vertexArrayObjectID = generateBuffer(hello_world);
     textNode->VAOIndexCount = hello_world.indices.size();
     textNode->diffuseTextureID = t_charmapID;
@@ -186,37 +189,37 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
-void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar, glm::mat4 V, glm::mat4 P) {
+void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 V, mat4 P) {
 
-    glm::mat4 transformationMatrix(1.0);
+    mat4 transformationMatrix(1.0);
 
     switch(node->nodeType) {
         case HUD:
             // We orthographic now, bitches!
             // set orthographic VP
-            V = glm::mat4(1.0);
+            V = mat4(1.0);
             P = glm::ortho(-float(windowWidth) / float(windowHeight), float(windowWidth) / float(windowHeight), -1.0f, 1.0f);//, -10.0f, 120.0f);
             break;
         case NORMAL_TEXTURED_GEOMETRY:
         case TEXTURED_GEOMETRY:
         case GEOMETRY:
             transformationMatrix =
-                    glm::translate(glm::mat4(1.0), node->position)
-                    * glm::translate(glm::mat4(1.0), node->referencePoint)
-                    * glm::rotate(glm::mat4(1.0), node->rotation.z, glm::vec3(0,0,1))
-                    * glm::rotate(glm::mat4(1.0), node->rotation.y, glm::vec3(0,1,0))
-                    * glm::rotate(glm::mat4(1.0), node->rotation.x, glm::vec3(1,0,0))
-                    * glm::translate(glm::mat4(1.0), -node->referencePoint)
-                    * glm::scale(glm::mat4(1.0), node->scale);
+                    glm::translate(mat4(1.0), node->position)
+                    * glm::translate(mat4(1.0), node->referencePoint)
+                    * glm::rotate(mat4(1.0), node->rotation.z, vec3(0,0,1))
+                    * glm::rotate(mat4(1.0), node->rotation.y, vec3(0,1,0))
+                    * glm::rotate(mat4(1.0), node->rotation.x, vec3(1,0,0))
+                    * glm::translate(mat4(1.0), -node->referencePoint)
+                    * glm::scale(mat4(1.0), node->scale);
             break;
         case POINT_LIGHT:
         case SPOT_LIGHT:
             transformationMatrix =
-                    glm::translate(glm::mat4(1.0), node->position);
+                    glm::translate(mat4(1.0), node->position);
             break;
     }
-    glm::mat4 M = transformationThusFar * transformationMatrix;
-    glm::mat4 MV = V*M;
+    mat4 M = transformationThusFar * transformationMatrix;
+    mat4 MV = V*M;
 
     node->MV = MV;
     node->MVP = P*MV;
@@ -228,7 +231,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar,
 
     if (node->targeted_by != nullptr) {
         assert(node->targeted_by->nodeType == SPOT_LIGHT);
-        node->targeted_by->rotation = glm::vec3(MV*glm::vec4(node->position, 1.0));
+        node->targeted_by->rotation = vec3(MV*glm::vec4(node->position, 1.0));
 
         //std::cout << node->targeted_by->rotation[0]
         //    << " " << node->targeted_by->rotation[1]
@@ -239,7 +242,6 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar,
 
 void updateFrame(GLFWwindow* window) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     double timeDelta = getTimeDeltaSeconds();
 
     if(!hasStarted) {
@@ -271,7 +273,7 @@ void updateFrame(GLFWwindow* window) {
                 ballRadius = 999999;
             }
         } else {
-            for (unsigned int i = currentKeyFrame; i < keyFrameTimeStamps.size(); i++) {
+            for (uint i = currentKeyFrame; i < keyFrameTimeStamps.size(); i++) {
                 if (totalElapsedTime < keyFrameTimeStamps.at(i)) {
                     continue;
                 }
@@ -365,14 +367,16 @@ void updateFrame(GLFWwindow* window) {
         }
     }
 
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), float(windowWidth) / float(windowHeight), 0.1f,
+    mat4 projection = glm::perspective(glm::radians(90.0f), float(windowWidth) / float(windowHeight), 0.1f,
                                             120.f);
 
-    glm::mat4 cameraTransform =   glm::translate(glm::mat4(1), glm::vec3(0, 0, 0))
-                                * glm::rotate(glm::mat4(1.0), 0.2f, glm::vec3(1, 0, 0))
-                                * glm::rotate(glm::mat4(1.0), float(M_PI), glm::vec3(0, 1, 0));
+    // hardcoded camera position...
+    mat4 cameraTransform 
+        = glm::translate(mat4(1), vec3(0, 0, 0))
+        * glm::rotate(mat4(1.0), 0.2f, vec3(1, 0, 0))
+        * glm::rotate(mat4(1.0), float(M_PI), vec3(0, 1, 0));
 
-    updateNodeTransformations(rootNode, glm::mat4(1.0), cameraTransform, projection);
+    updateNodeTransformations(rootNode, mat4(1.0), cameraTransform, projection);
 
     boxNode->position = {-boxDimensions.x / 2, -boxDimensions.y / 2 - 15, boxDimensions.z - 10};
     padNode->position = {-boxDimensions.x / 2 + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),

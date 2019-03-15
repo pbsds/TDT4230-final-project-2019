@@ -1,11 +1,15 @@
 #include "imageLoader.hpp"
+#include <glm/vec2.hpp>
+#include <glm/gtc/noise.hpp>
 #include <iostream>
 
+using glm::vec2;
+using std::vector;
+
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
-PNGImage loadPNGFile(std::string fileName)
-{
-	std::vector<unsigned char> png;
-	std::vector<unsigned char> pixels; //the raw pixels
+PNGImage loadPNGFile(std::string fileName) {
+	vector<unsigned char> png;
+	vector<unsigned char> pixels; //the raw pixels
 	unsigned int width, height;
 
 	//load and decode
@@ -37,5 +41,4 @@ PNGImage loadPNGFile(std::string fileName)
 	image.pixels = pixels;
 
 	return image;
-
 }
