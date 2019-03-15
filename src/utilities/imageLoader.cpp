@@ -43,3 +43,32 @@ PNGImage loadPNGFile(std::string fileName) {
 
 	return image;
 }
+
+
+PNGImage makePerlinNoisePNG(uint w, uint h, float scale) {
+	return makePerlinNoisePNG(w, h, vector<float>{scale});
+}
+PNGImage makePerlinNoisePNG(uint w, uint h, vector<float> scales) {
+	uint wb = 4*w; // in bytes
+	
+	vector<unsigned char> pixels(wb*h);
+	for (uint y = 0; y < h; y++)
+	for (uint x = 0; x < w; x++) {
+		float v = 0;
+		for (float scale : scales)
+			v += glm::simplex(vec2(x*scale, y*scale));
+		v /= scales.size();
+		
+		unsigned char val =  (unsigned char)  (127 + 128*v);
+		pixels[y*wb + x*4 + 0] = val;
+		pixels[y*wb + x*4 + 1] = val;
+		pixels[y*wb + x*4 + 2] = val;
+		pixels[y*wb + x*4 + 3] = 0xff;
+	}
+
+	PNGImage image;
+	image.width  = w;
+	image.height = h;
+	image.pixels = pixels;
+	return image;
+}

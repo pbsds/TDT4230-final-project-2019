@@ -75,6 +75,7 @@ double totalElapsedTime = debug_startTime;
 PNGImage t_charmap;
 PNGImage t_cobble_diff;
 PNGImage t_cobble_normal;
+PNGImage t_perlin;
 
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
@@ -123,6 +124,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     t_charmap       = loadPNGFile("../res/textures/charmap.png");
     t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
     t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
+    t_perlin        = makePerlinNoisePNG(1639*2, 44, {0.1, 0.2, 0.3});
 
     rootNode = createSceneNode();
     boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);

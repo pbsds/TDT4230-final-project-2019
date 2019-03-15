@@ -12,3 +12,7 @@ struct PNGImage {
 };
 
 PNGImage loadPNGFile(std::string fileName);
+
+PNGImage makePerlinNoisePNG(uint w, uint h, float scale=0.1);
+
+PNGImage makePerlinNoisePNG(uint w, uint h, std::vector<float> scales);
