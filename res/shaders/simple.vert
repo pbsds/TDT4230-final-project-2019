@@ -6,11 +6,9 @@ in layout(location = 2) vec2 UV;
 in layout(location = 3) vec3 tangent;
 in layout(location = 4) vec3 bitangent;
 
-uniform layout(location = 6) mat4 MVP;
-uniform layout(location = 7) mat4 MV;
-uniform layout(location = 8) mat4 MVnormal;
-
-//named
+uniform mat4 MVP;
+uniform mat4 MV;
+uniform mat4 MVnormal;
 uniform bool isIlluminated;
 uniform bool isTextured;
 uniform bool isNormalMapped;

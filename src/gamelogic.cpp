@@ -218,9 +218,9 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar,
     glm::mat4 M = transformationThusFar * transformationMatrix;
     glm::mat4 MV = V*M;
 
-    node->currentTransformationMatrixMV = MV;
-    node->currentTransformationMatrix = P*MV;
-    node->currentTransformationMatrixMVnormal = glm::inverse(glm::transpose(MV));
+    node->MV = MV;
+    node->MVP = P*MV;
+    node->MVnormal = glm::inverse(glm::transpose(MV));
 
     for(SceneNode* child : node->children) {
         updateNodeTransformations(child, M, V, P);
@@ -387,9 +387,9 @@ void updateFrame(GLFWwindow* window) {
 
 
 void renderNode(SceneNode* node) {
-    glUniformMatrix4fv(6, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-    glUniformMatrix4fv(7, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMV));
-    glUniformMatrix4fv(8, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrixMVnormal));
+    glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
+    glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
+    glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
     glUniform1ui(shader->location("isNormalMapped"), false);
     glUniform1ui(shader->location("isTextured"), false);
 
@@ -423,6 +423,7 @@ void renderNode(SceneNode* node) {
             break;
         }
         case HUD:
+        default:
             break;
     }
 

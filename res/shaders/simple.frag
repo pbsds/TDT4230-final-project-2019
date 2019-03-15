@@ -4,18 +4,18 @@ in layout(location = 0) vec3 normal;
 in layout(location = 1) vec3 vertex;
 in layout(location = 2) vec2 UV;
 in layout(location = 3) mat3 TBN;
+
 layout(binding = 0) uniform sampler2D diffuseTexture;
 layout(binding = 1) uniform sampler2D normalTexture;
+
+uniform mat4 MVP;
+uniform mat4 MV;
+uniform mat4 MVnormal;
 
 uniform bool isIlluminated;
 uniform bool isTextured;
 uniform bool isNormalMapped;
 uniform bool isInverted;
-
-uniform layout(location = 6) mat4 MVP;
-uniform layout(location = 7) mat4 MV;
-uniform layout(location = 8) mat4 MVnormal;
-
 
 // point lights
 struct Light {

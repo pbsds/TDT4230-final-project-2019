@@ -51,9 +51,9 @@ struct SceneNode {
 	glm::vec3 scale;
 
 	// A transformation matrix representing the transformation of the node's location relative to its parent. This matrix is updated every frame.
-	glm::mat4 currentTransformationMatrix; // MVP
-	glm::mat4 currentTransformationMatrixMV; // MV
-	glm::mat4 currentTransformationMatrixMVnormal; // transpose(inverse(MV))
+	glm::mat4 MVP; // MVP
+	glm::mat4 MV; // MV
+	glm::mat4 MVnormal; // transpose(inverse(MV))
 
 	// The location of the node's reference point
 	glm::vec3 referencePoint;
