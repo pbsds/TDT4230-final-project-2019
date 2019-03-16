@@ -64,7 +64,7 @@ void addTangents(uint vaoID, Mesh& mesh) {
         vec2 deltaUV1 = uv2 - uv1;
         vec2 deltaUV2 = uv3 - uv1;
 
-        float f = -1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
         
         vec3 tangent{
             f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),

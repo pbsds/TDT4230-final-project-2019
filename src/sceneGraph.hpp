@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -22,7 +23,9 @@ using std::vector;
 typedef unsigned int uint;
 
 enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT, TEXTURED_GEOMETRY, NORMAL_TEXTURED_GEOMETRY
+	GEOMETRY,
+	POINT_LIGHT,
+	SPOT_LIGHT,
 };
 
 struct SceneNode {
@@ -34,58 +37,84 @@ struct SceneNode {
 		static map<Mesh*, int> cache;
 
 		if (cache.find(mesh) == cache.end())
-			cache[mesh] = generateBuffer(*mesh, nodeType==NORMAL_TEXTURED_GEOMETRY);
+			cache[mesh] = generateBuffer(*mesh, isNormalMapped || isDisplacementMapped);
 
 		vertexArrayObjectID = cache[mesh];
 		VAOIndexCount = mesh->indices.size();
 	}
-	void setTexture(PNGImage* diffuse, PNGImage* normal = nullptr) {
+	void setTexture(PNGImage* diffuse, PNGImage* normal=nullptr, PNGImage* displacement=nullptr) {
 		static map<PNGImage*, int> cache;
+		assert(vertexArrayObjectID==-1);
 
-		if (cache.find(diffuse) == cache.end()) cache[diffuse] = generateTexture(*diffuse);
-		diffuseTextureID = cache[diffuse];
+		if (diffuse) {
+			if (cache.find(diffuse) == cache.end())
+				cache[diffuse] = generateTexture(*diffuse);
+			diffuseTextureID = cache[diffuse];
+			isTextured = true;
+		}
 		
-		if (!normal) return;
-		if (cache.find(normal)  == cache.end()) cache[normal]  = generateTexture(*normal);
-		normalTextureID  = cache[normal];
+		if (normal) {
+			if (cache.find(normal) == cache.end())
+				cache[normal] = generateTexture(*normal);
+			normalTextureID = cache[normal];
+			isNormalMapped  = true;
+		}
+		
+		if (displacement) {
+			if (cache.find(displacement) == cache.end())
+				cache[displacement] = generateTexture(*displacement);
+			displacementTextureID = cache[displacement];
+			isDisplacementMapped  = true;
+		}
 	}
 	
+	// this node
+	SceneNodeType nodeType;
 	vector<SceneNode*> children;
+
+	// light specific:
+	uint  lightID        = -1;
+	vec3  color_emissive = vec3(0.0);
+	vec3  color_diffuse  = vec3(0.8);
+	vec3  color_specular = vec3(0.5);
+	vec3  attenuation    = vec3(1.0, 0.0, 0.001); // 1 / (x + y*l + z*l*l)
+	float spot_cuttof_angle = glm::radians(1.5); // radians
+	SceneNode* targeted_by  = nullptr; // spot will follow this node
 
 	// The node's position and rotation relative to its parent
 	vec3 position = vec3(0, 0, 0);
-	vec3 rotation = vec3(0, 0, 0);
+	vec3 rotation = vec3(0, 0, 0); // also used as spot-target
 	vec3 scale    = vec3(1, 1, 1);
-
-	// set this if the shape uses a custom shader other than the inherited one
-	Gloom::Shader* shader = nullptr;
-	
-	// A transformation matrix representing the transformation of the node's location relative to its parent. This matrix is updated every frame.
-	mat4 MVP; // MVP
-	mat4 MV; // MV
-	mat4 MVnormal; // transpose(inverse(MV))
-
-	// The location of the node's reference point (center of rotation)
-	vec3 referencePoint = vec3(0, 0, 0);
+	vec3 referencePoint = vec3(0, 0, 0); // center of rotation, in model space
 
 	// VAO IDs refering to a loaded Mesh and its length
 	int vertexArrayObjectID = -1;
 	uint VAOIndexCount = 0;
-	
+
 	// textures
+	float shinyness = 10.0; // specular power
 	uint diffuseTextureID;
 	uint normalTextureID;
-	
+	uint displacementTextureID;
+	float displacementCoefficient = 0.1; // in units
+
 	// shader flags
+	bool isTextured = false;
+	bool isNormalMapped = false;
+	bool isDisplacementMapped = false;
 	bool isIlluminated = true;
 	bool isInverted = false;
 
-	// Node type is used to determine how to handle the contents of a node
-	SceneNodeType nodeType;
+	// rendering
+	Gloom::Shader* shader = nullptr;
+	mat4 MVP; // MVP
+	mat4 MV; // MV
+	mat4 MVnormal; // transpose(inverse(MV))
 
-	// for lights:
-	uint lightID;
-	SceneNode* targeted_by = nullptr; // spot
+
+	
+	
+
 };
 
 // Struct for keeping track of 2D coordinates

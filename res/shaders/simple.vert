@@ -6,6 +6,9 @@ in layout(location = 2) vec2 UV;
 in layout(location = 3) vec3 tangent;
 in layout(location = 4) vec3 bitangent;
 
+layout(binding = 2) uniform sampler2D displacementTexture;
+uniform float displacementCoefficient;
+
 uniform mat4 MVP;
 uniform mat4 MV;
 uniform mat4 MVnormal;
@@ -13,8 +16,8 @@ uniform bool isIlluminated;
 uniform bool isTextured;
 uniform bool isNormalMapped;
 
-out layout(location = 0) vec3 normal_out;
-out layout(location = 1) vec3 vertex_out;
+out layout(location = 0) vec3 vertex_out;
+out layout(location = 1) vec3 normal_out;
 out layout(location = 2) vec2 uv_out;
 out layout(location = 3) mat3 TBN;
 

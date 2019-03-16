@@ -39,7 +39,8 @@ SceneNode* padNode;
 SceneNode* hudNode;
 SceneNode* textNode;
 
-SceneNode* lightNode[3];
+const uint N_LIGHTS = 1;
+SceneNode* lightNode[N_LIGHTS];
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::Sound* sound;
@@ -122,7 +123,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     plainNode->setTexture(&t_plain_diff, &t_plain_normal);
 
     // add lights
-    for (int i = 0; i<3; i++) {
+    for (uint i = 0; i<N_LIGHTS; i++) {
         lightNode[i] = createSceneNode(POINT_LIGHT);
         lightNode[i]->lightID = i;
     }
@@ -151,8 +152,6 @@ void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4
     mat4 transformationMatrix(1.0);
 
     switch(node->nodeType) {
-        case NORMAL_TEXTURED_GEOMETRY:
-        case TEXTURED_GEOMETRY:
         case GEOMETRY:
             transformationMatrix =
                     glm::translate(mat4(1.0), node->position)
@@ -254,19 +253,29 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
 void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) {
     struct Light { // lights as stored in the shader
         // coordinates in MV space
-        vec3 position;
-        vec3 spot_target;
-        bool is_spot;
+        vec3  position;
+        vec3  spot_target;
+        bool  is_spot;
+        float spot_cuttof_angle;
+        vec3  attenuation;
+        vec3  color_emissive;
+        vec3  color_diffuse;
+        vec3  color_specular;
         
         void push_to_shader(Gloom::Shader* shader, uint id) {
             #define l(x) shader->location("light[" + std::to_string(id) + "]." + #x)
-                glUniform3fv      (l(position)   , 1, glm::value_ptr(position));
-                glUniform3fv      (l(spot_target), 1, glm::value_ptr(spot_target));
-                glUniform1i       (l(is_spot)    ,    is_spot);
+                glUniform1i (l(is_spot)          ,    is_spot);
+                glUniform1f (l(spot_cuttof_angle),    spot_cuttof_angle);
+                glUniform3fv(l(position)         , 1, glm::value_ptr(position));
+                glUniform3fv(l(spot_target)      , 1, glm::value_ptr(spot_target));
+                glUniform3fv(l(attenuation)      , 1, glm::value_ptr(attenuation));
+                glUniform3fv(l(color_emissive)   , 1, glm::value_ptr(color_emissive));
+                glUniform3fv(l(color_diffuse)    , 1, glm::value_ptr(color_diffuse));
+                glUniform3fv(l(color_specular)   , 1, glm::value_ptr(color_specular));
             #undef l
         }
     };
-    static Light lights[3];
+    static Light lights[N_LIGHTS];
     static Gloom::Shader* s = nullptr; // The currently active shader
     
     // activate the correct shader
@@ -279,26 +288,24 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
         uint i = 0; for (Light l : lights) l.push_to_shader(s, i++);
     }
 
-    // load uniforms
-    glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
-    glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
-    glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
-    glUniform1ui(s->location("isNormalMapped"), false);
-    glUniform1ui(s->location("isTextured"), false);
-
     switch(node->nodeType) {
-        case NORMAL_TEXTURED_GEOMETRY:
-            glUniform1ui(s->location("isNormalMapped"), true);
-            glBindTextureUnit(1, node->normalTextureID);
-            [[fallthrough]];
-        case TEXTURED_GEOMETRY:
-            glUniform1ui(s->location("isTextured"), true);
-            glBindTextureUnit(0, node->diffuseTextureID);
-            [[fallthrough]];
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
-                glUniform1ui(s->location("isIlluminated"), node->isIlluminated);
-                glUniform1ui(s->location("isInverted"), node->isInverted);
+                // load uniforms
+                glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
+                glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
+                glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
+                glUniform1f( s->location("shinyness"),               node->shinyness);
+                glUniform1f( s->location("displacementCoefficient"), node->displacementCoefficient);
+                glUniform1ui(s->location("isTextured"),              node->isTextured);
+                glUniform1ui(s->location("isNormalMapped"),          node->isNormalMapped);
+                glUniform1ui(s->location("isDisplacementMapped"),    node->isDisplacementMapped);
+                glUniform1ui(s->location("isIlluminated"),           node->isIlluminated);
+                glUniform1ui(s->location("isInverted"),              node->isInverted);
+
+                if (node->isTextured)           glBindTextureUnit(0, node->diffuseTextureID);
+                if (node->isNormalMapped)       glBindTextureUnit(1, node->normalTextureID);
+                if (node->isDisplacementMapped) glBindTextureUnit(2, node->displacementTextureID);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
@@ -306,9 +313,14 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
         case SPOT_LIGHT:
         case POINT_LIGHT: {
             uint id = node->lightID;
-            lights[id].position    = vec3(node->MV * glm::vec4(node->position, 1.0));
-            lights[id].is_spot     = node->nodeType == SPOT_LIGHT;
-            lights[id].spot_target = node->rotation;
+            lights[id].position          = vec3(node->MV * glm::vec4(node->position, 1.0));
+            lights[id].is_spot           = node->nodeType == SPOT_LIGHT;
+            lights[id].spot_target       = node->rotation;
+            lights[id].spot_cuttof_angle = node->spot_cuttof_angle;
+            lights[id].attenuation       = node->attenuation;
+            lights[id].color_emissive    = node->color_emissive;
+            lights[id].color_diffuse     = node->color_diffuse;
+            lights[id].color_specular    = node->color_specular;
             lights[id].push_to_shader(s, id);
             break;
         }
