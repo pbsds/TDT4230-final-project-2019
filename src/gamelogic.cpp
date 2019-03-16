@@ -35,6 +35,7 @@ uint currentKeyFrame = 0;
 uint previousKeyFrame = 0;
 
 SceneNode* rootNode;
+SceneNode* plainNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
@@ -79,7 +80,9 @@ double totalElapsedTime = debug_startTime;
 PNGImage t_charmap       = loadPNGFile("../res/textures/charmap.png");
 PNGImage t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
 PNGImage t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
-PNGImage t_perlin        = makePerlinNoisePNG(1639*2, 44, {0.1, 0.2, 0.3});
+PNGImage t_plain_diff    = loadPNGFile("../res/textures/plain_diff.png");
+PNGImage t_plain_normal  = loadPNGFile("../res/textures/plain_normal.png");
+PNGImage t_perlin        = makePerlinNoisePNG(256, 256, {0.1, 0.2, 0.3});
 
 
 void mouseCallback(GLFWwindow* window, double x, double y) {
@@ -124,22 +127,27 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh box = generateBox(boxDimensions.x, boxDimensions.y, boxDimensions.z, true);
     Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
+    Mesh plain = generateSegmentedPlane(1000, 1000, 100, 100);
 
     rootNode = createSceneNode();
     hudNode = createSceneNode();
     
+    plainNode = createSceneNode(TEXTURED_GEOMETRY);
     boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);
     padNode = createSceneNode();
     ballNode = createSceneNode();
 
     textNode = createSceneNode(TEXTURED_GEOMETRY);
-
-    rootNode->children.push_back(boxNode);
-    rootNode->children.push_back(padNode);
-    rootNode->children.push_back(ballNode);
+    
+    //rootNode->children.push_back(boxNode);
+    //rootNode->children.push_back(padNode);
+    //rootNode->children.push_back(ballNode);
+    rootNode->children.push_back(plainNode);
 
     hudNode->children.push_back(textNode);
-    //rootNode->children.push_back(textNode);
+
+    plainNode->setMesh(&plain);
+    plainNode->setTexture(&t_plain_diff, &t_plain_normal);
 
     boxNode->setMesh(&box);
     boxNode->setTexture(&t_cobble_diff, &t_cobble_normal);
@@ -162,6 +170,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     lightNode[1]->nodeType = SPOT_LIGHT;
     padNode->targeted_by = lightNode[1];
     
+    plainNode->position = {0, 0, 0};
+    //plainNode->rotation = vec3(0.0, 0.0, M_PI);
     
     // hud
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);

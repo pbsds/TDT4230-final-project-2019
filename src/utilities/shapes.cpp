@@ -347,8 +347,8 @@ Mesh generateSegmentedPlane(float width, float height, uint x_segments, uint y_s
             vec2(tex_step_x*(x+1), tex_step_y*(y+1)),
         });
         indices.insert(indices.end(), {
-            index_offset + 0, index_offset + 1, index_offset + 2,
-            index_offset + 1, index_offset + 2, index_offset + 3,
+            index_offset + 0, index_offset + 3, index_offset + 1,
+            index_offset + 0, index_offset + 2, index_offset + 3,
         });
         index_offset += 4;
     }
