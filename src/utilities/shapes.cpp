@@ -313,7 +313,7 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     return mesh;
 }
 
-Mesh generateSegmentedPlane(float width, float height, uint x_segments, uint y_segments) {
+Mesh generateSegmentedPlane(float width, float height, uint x_segments, uint y_segments, float uv_scale) {
     // i should perhaps initialize these to the length they should be, but insert is prettier :3
     vector<vec3> vertices;
     vector<vec3> normals;
@@ -322,8 +322,8 @@ Mesh generateSegmentedPlane(float width, float height, uint x_segments, uint y_s
     
     float step_x = width/x_segments;
     float step_y = height/y_segments;
-    float tex_step_x = 1.0/x_segments;
-    float tex_step_y = 1.0/y_segments;
+    float tex_step_x = uv_scale/x_segments;
+    float tex_step_y = uv_scale/y_segments;
     uint index_offset = 0;
     
     for (uint x = 0; x < x_segments; x++)
@@ -334,7 +334,7 @@ Mesh generateSegmentedPlane(float width, float height, uint x_segments, uint y_s
             vec3(step_x*(x+1), step_y*(y+0), 0),
             vec3(step_x*(x+1), step_y*(y+1), 0),
         });
-        normals.insert(vertices.end(), {
+        normals.insert(normals.end(), {
             vec3(0.0, 0.0, 1.0),
             vec3(0.0, 0.0, 1.0),
             vec3(0.0, 0.0, 1.0),
