@@ -114,34 +114,39 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     default_shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     
     Mesh plain = generateSegmentedPlane(1000, 1000, 100, 100);
+    Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
 
     rootNode = createSceneNode();
     hudNode = createSceneNode();
     
-    plainNode = createSceneNode(TEXTURED_GEOMETRY);
-    plainNode->setMesh(&plain);
+    plainNode = createSceneNode();
     plainNode->setTexture(&t_plain_diff, &t_plain_normal);
+    plainNode->setMesh(&plain);
+    plainNode->position = {0, 0, 0};
+    plainNode->shinyness = 30;
+    rootNode->children.push_back(plainNode);
 
     // add lights
     for (uint i = 0; i<N_LIGHTS; i++) {
         lightNode[i] = createSceneNode(POINT_LIGHT);
         lightNode[i]->lightID = i;
+        rootNode->children.push_back(lightNode[0]);
     }
-    rootNode->children.push_back(lightNode[0]);
-    rootNode->children.push_back(lightNode[1]);
-    ballNode->children.push_back(lightNode[2]);
-    lightNode[0]->position = {0, 0, 0};
-    lightNode[1]->position = {-300, -500, 300};
-    lightNode[2]->position = {0, 0, 0};
+    lightNode[0]->position = {200, 800, 600};
+    lightNode[0]->color_emissive = vec3(0.2);
+    lightNode[0]->color_diffuse  = vec3(0.8);
+    lightNode[0]->color_specular = vec3(0.0);
+    lightNode[0]->attenuation = vec3(1.0, 0.0, 0.000000);
     
     
-    // hud
-    Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
-    textNode->position = vec3(-1.0, -1.0, 0.0);
-    textNode->setMesh(&hello_world);
+    textNode = createSceneNode();
     textNode->setTexture(&t_charmap);
+    textNode->setMesh(&hello_world);
+    textNode->position = vec3(-1.0, -1.0, 0.0);
     textNode->isIlluminated = false;
     textNode->isInverted = true;
+    hudNode->children.push_back(textNode);
+    
     
     getTimeDeltaSeconds();
 
