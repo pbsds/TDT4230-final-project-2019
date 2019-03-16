@@ -57,7 +57,7 @@ struct SceneNode {
 	vec3 rotation = vec3(0, 0, 0);
 	vec3 scale    = vec3(1, 1, 1);
 
-	// set this if the shape uses a custom shader other than the default one
+	// set this if the shape uses a custom shader other than the inherited one
 	Gloom::Shader* shader = nullptr;
 	
 	// A transformation matrix representing the transformation of the node's location relative to its parent. This matrix is updated every frame.

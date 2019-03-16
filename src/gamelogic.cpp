@@ -368,7 +368,7 @@ void updateFrame(GLFWwindow* window) {
 }
 
 
-void renderNode(SceneNode* node) {
+void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) {
     struct Light { // lights as stored in the shader
         // coordinates in MV space
         vec3 position;
@@ -389,7 +389,7 @@ void renderNode(SceneNode* node) {
     // activate the correct shader
     Gloom::Shader* node_shader = (node->shader != nullptr)
         ? node->shader
-        : default_shader;
+        : parent_shader;
     if (s != node_shader) {
         s = node_shader;
         s->activate();
@@ -435,7 +435,7 @@ void renderNode(SceneNode* node) {
     }
 
     for(SceneNode* child : node->children) {
-        renderNode(child);
+        renderNode(child, node_shader);
     }
 }
 
