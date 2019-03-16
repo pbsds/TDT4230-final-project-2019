@@ -167,7 +167,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     textNode->isIlluminated = false;
     textNode->isInverted = true;
     
-    
     getTimeDeltaSeconds();
 
     std::cout << "Ready. Click to start!" << std::endl;

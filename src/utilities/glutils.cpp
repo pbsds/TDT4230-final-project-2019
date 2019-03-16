@@ -64,27 +64,29 @@ void addTangents(uint vaoID, Mesh& mesh) {
         vec2 deltaUV1 = uv2 - uv1;
         vec2 deltaUV2 = uv3 - uv1;
 
-        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        float f = -1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
         
-        vec3 tangent, bitangent;
-        tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-        tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-        tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-        bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-        bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-        bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+        vec3 tangent{
+            f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
+            f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
+            f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z),
+        };
+        vec3 bitangent{
+            f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x),
+            f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y),
+            f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z),
+        };
         
         tangent = glm::normalize(tangent);
         bitangent = glm::normalize(bitangent);
         
         // handedness
-        tangents[i+0] = -tangent;
-        tangents[i+1] = -tangent;
-        tangents[i+2] = -tangent;
-        bitangents[i+0] = -bitangent;
-        bitangents[i+1] = -bitangent;
-        bitangents[i+2] = -bitangent;
+        tangents[mesh.indices[i+0]] = tangent;
+        tangents[mesh.indices[i+1]] = tangent;
+        tangents[mesh.indices[i+2]] = tangent;
+        bitangents[mesh.indices[i+0]] = bitangent;
+        bitangents[mesh.indices[i+1]] = bitangent;
+        bitangents[mesh.indices[i+2]] = bitangent;
     }
     
     glBindVertexArray(vaoID);
