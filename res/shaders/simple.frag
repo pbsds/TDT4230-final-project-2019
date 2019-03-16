@@ -14,7 +14,7 @@ uniform mat4 MVP;
 uniform mat4 MV;
 uniform mat4 MVnormal;
 
-uniform float shininess;
+uniform float shinyness;
 
 uniform bool isIlluminated;
 uniform bool isTextured;
@@ -74,11 +74,14 @@ vec4 phong(vec4 basecolor) {
             ), 0.0, 1.25);
 
         float diffuse_i = dot(nnormal, L);
-        float specular_i = pow(dot(reflect(-L, nnormal), normalize(-vertex)), shininess);
+        float specular_i = dot(reflect(-L, nnormal), vec3(0.0)-normalize(vertex));
+        specular_i = (specular_i>0)
+            ? pow(specular_i, shinyness)
+            : 0;
 
         emmissive_component += light[i].color_emissive;
         if (diffuse_i>0)  diffuse_component  += light[i].color_diffuse  * diffuse_i  * attenuation;
-        if (specular_i>0) specular_component += light[i].color_specular * specular_i * attenuation;
+        specular_component += light[i].color_specular * specular_i * attenuation;
     }
 
     return vec4(basecolor.rgb * (emmissive_component + diffuse_component) + specular_component, basecolor.a);
