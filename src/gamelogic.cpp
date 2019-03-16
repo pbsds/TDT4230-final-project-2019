@@ -28,9 +28,6 @@ enum KeyFrameAction {
 
 #include <timestamps.h>
 
-double padPositionX = 0;
-double padPositionY = 0;
-
 uint currentKeyFrame = 0;
 uint previousKeyFrame = 0;
 
@@ -44,8 +41,6 @@ SceneNode* textNode;
 
 SceneNode* lightNode[3];
 
-double ballRadius = 3.0f;
-
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::Sound* sound;
 sf::SoundBuffer* buffer;
@@ -57,14 +52,6 @@ Gloom::Shader* post_shader;
 vec3 cameraPosition = vec3(0, 0, 400);
 vec3 cameraLookAt = vec3(500, 500, 0);
 vec3 cameraUpward = vec3(0, 0, 1);
-
-const vec3 boxDimensions(180, 90, 50);
-const vec3 padDimensions(30, 3, 40);
-
-vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
-vec3 ballDirection(1, 1, 0.02f);
-
-const float BallVerticalTravelDistance = boxDimensions.y - 2.0 * ballRadius - padDimensions.y;
 
 CommandLineOptions options;
 
@@ -90,9 +77,9 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
 
-    padPositionX = x / double(windowWidth);
-    padPositionY = y / double(windowHeight);
-
+    float mousePositionX = x / double(windowHeight); // like the hudNode space
+    float mousePositionY = y / double(windowHeight);
+    /*
     if(padPositionX > 1) {
         padPositionX = 1;
         glfwSetCursorPos(window, windowWidth, y);
@@ -107,6 +94,7 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
         padPositionY = 0;
         glfwSetCursorPos(window, x, 0);
     }
+    */
 }
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -124,36 +112,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     default_shader = new Gloom::Shader();
     default_shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     
-    Mesh box = generateBox(boxDimensions.x, boxDimensions.y, boxDimensions.z, true);
-    Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
-    Mesh sphere = generateSphere(1.0, 40, 40);
     Mesh plain = generateSegmentedPlane(1000, 1000, 100, 100);
 
     rootNode = createSceneNode();
     hudNode = createSceneNode();
     
     plainNode = createSceneNode(TEXTURED_GEOMETRY);
-    boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);
-    padNode = createSceneNode();
-    ballNode = createSceneNode();
-
-    textNode = createSceneNode(TEXTURED_GEOMETRY);
-    
-    //rootNode->children.push_back(boxNode);
-    //rootNode->children.push_back(padNode);
-    //rootNode->children.push_back(ballNode);
-    rootNode->children.push_back(plainNode);
-
-    hudNode->children.push_back(textNode);
-
     plainNode->setMesh(&plain);
     plainNode->setTexture(&t_plain_diff, &t_plain_normal);
-
-    boxNode->setMesh(&box);
-    boxNode->setTexture(&t_cobble_diff, &t_cobble_normal);
-
-    padNode->setMesh(&pad);
-    ballNode->setMesh(&sphere);
 
     // add lights
     for (int i = 0; i<3; i++) {
@@ -163,15 +129,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(lightNode[0]);
     rootNode->children.push_back(lightNode[1]);
     ballNode->children.push_back(lightNode[2]);
-    lightNode[0]->position = {boxDimensions.x/2 - 10, boxDimensions.y/2 - 10, boxDimensions.z/2 - 10};
+    lightNode[0]->position = {0, 0, 0};
     lightNode[1]->position = {-300, -500, 300};
     lightNode[2]->position = {0, 0, 0};
-
-    lightNode[1]->nodeType = SPOT_LIGHT;
-    padNode->targeted_by = lightNode[1];
     
-    plainNode->position = {0, 0, 0};
-    //plainNode->rotation = vec3(0.0, 0.0, M_PI);
     
     // hud
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
@@ -242,9 +203,6 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
             totalElapsedTime = debug_startTime;
             hasStarted = true;
         }
-
-        ballPosition.x = (1 - padPositionX) * (boxDimensions.x - padDimensions.x) + padDimensions.x / 2.0;
-        ballPosition.y = ballRadius + padDimensions.y;
     } else {
 
         // I really should calculate this using the std::chrono timestamp for this
@@ -253,10 +211,10 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
         totalElapsedTime += timeDelta;
 
         if(hasLost) {
-            ballRadius += 200 * timeDelta;
-            if(ballRadius > 999999) {
-                ballRadius = 999999;
-            }
+            //ballRadius += 200 * timeDelta;
+            //if(ballRadius > 999999) {
+            //    ballRadius = 999999;
+            //}
         } else {
             for (uint i = currentKeyFrame; i < keyFrameTimeStamps.size(); i++) {
                 if (totalElapsedTime < keyFrameTimeStamps.at(i)) {
@@ -268,87 +226,6 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
             jumpedToNextFrame = currentKeyFrame != previousKeyFrame;
             previousKeyFrame = currentKeyFrame;
 
-            double frameStart = keyFrameTimeStamps.at(currentKeyFrame);
-            double frameEnd = keyFrameTimeStamps.at(currentKeyFrame + 1); // Assumes last keyframe at infinity
-
-            double elapsedTimeInFrame = totalElapsedTime - frameStart;
-            double frameDuration = frameEnd - frameStart;
-            double fractionFrameComplete = elapsedTimeInFrame / frameDuration;
-
-            double ballYCoord;
-
-            const float ballBottomY = ballRadius + padDimensions.y;
-
-            KeyFrameAction currentOrigin = keyFrameDirections.at(currentKeyFrame);
-            KeyFrameAction currentDestination = keyFrameDirections.at(currentKeyFrame + 1);
-
-            if (currentOrigin == BOTTOM && currentDestination == BOTTOM) {
-                ballYCoord = ballBottomY;
-            } else if (currentOrigin == TOP && currentDestination == TOP) {
-                ballYCoord = ballBottomY + BallVerticalTravelDistance;
-            } else if (currentDestination == BOTTOM) {
-                ballYCoord = ballBottomY + BallVerticalTravelDistance * (1 - fractionFrameComplete);
-            } else if (currentDestination == TOP) {
-                ballYCoord = ballBottomY + BallVerticalTravelDistance * fractionFrameComplete;
-            }
-
-
-            const float ballSpeed = 60.0f;
-
-            ballPosition.x += timeDelta * ballSpeed * ballDirection.x;
-            ballPosition.y = ballYCoord;
-            ballPosition.z += timeDelta * ballSpeed * ballDirection.z;
-
-            if (ballPosition.x + ballRadius > boxDimensions.x) {
-                // Crude approximation, because it does not compute the intersection with the wall
-                // Not doing it causes the ball to get stuck in the wall though
-                ballPosition.x = boxDimensions.x - ballRadius;
-                ballDirection.x *= -1;
-            } else if (ballPosition.x - ballRadius < 0) {
-                ballPosition.x = ballRadius;
-                ballDirection.x *= -1;
-            }
-
-            if (ballPosition.y + ballRadius > boxDimensions.y) {
-                ballPosition.y = boxDimensions.y - ballRadius;
-                ballDirection.y *= -1;
-            } else if (ballPosition.y - ballRadius < 0) {
-                ballPosition.y = ballRadius;
-                ballDirection.y *= -1;
-            }
-
-            if (ballPosition.z + ballRadius > boxDimensions.z) {
-                ballPosition.z = boxDimensions.z - ballRadius;
-                ballDirection.z *= -1;
-            } else if (ballPosition.z - ballRadius < 0) {
-                ballPosition.z = ballRadius;
-                ballDirection.z *= -1;
-            }
-
-            if(options.enableAutoplay) {
-                padPositionX = 1 - (ballPosition.x / (boxDimensions.x - 2 * ballRadius));
-                padPositionY = 1 - (ballPosition.z / (boxDimensions.z - 2 * ballRadius));
-            }
-
-            // Check if the ball is hitting the pad when the ball is at the bottom.
-            // If not, you just lost the game! (hehe)
-            if (jumpedToNextFrame && currentOrigin == BOTTOM && currentDestination == TOP) {
-                double padLeftXCoordinate = (1 - padPositionX) * (boxDimensions.x - padDimensions.x);
-                double padRightXCoordinate = padLeftXCoordinate + padDimensions.x;
-
-                double padFrontZCoordinate = (1 - padPositionY) * (boxDimensions.z - padDimensions.z);
-                double padBackZCoordinate = padFrontZCoordinate + padDimensions.z;
-
-                if (ballPosition.x < padLeftXCoordinate
-                    || ballPosition.x > padRightXCoordinate
-                    || ballPosition.z < padFrontZCoordinate
-                    || ballPosition.z > padBackZCoordinate) {
-                    hasLost = true;
-                    if (options.enableMusic) {
-                        sound->stop();
-                    }
-                }
-            }
         }
     }
 
@@ -370,15 +247,7 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     projection = glm::ortho(-float(windowWidth) / float(windowHeight), float(windowWidth) / float(windowHeight), -1.0f, 1.0f);
     updateNodeTransformations(hudNode, mat4(1.0), cameraTransform, projection);
 
-    boxNode->position = {-boxDimensions.x / 2, -boxDimensions.y / 2 - 15, boxDimensions.z - 10};
-    padNode->position = {-boxDimensions.x / 2 + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),
-                         -boxDimensions.y / 2 - 15,
-                         boxDimensions.z - 10 + (1 - padPositionY) * (boxDimensions.z - padDimensions.z)};
-    ballNode->position = {-boxDimensions.x / 2 + ballPosition.x,
-                          -boxDimensions.y / 2 - 15 + ballPosition.y,
-                          boxDimensions.z - 10 + ballPosition.z};
-
-    ballNode->scale = {ballRadius, ballRadius, ballRadius};
+    // update positions of nodes (like the car)
 }
 
 
