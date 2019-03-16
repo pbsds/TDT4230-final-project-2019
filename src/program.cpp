@@ -39,13 +39,11 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 	    // Clear colour and depth buffers
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
 
-        updateFrame(window);
-        renderFrame(window);
-
-
-
-
+        updateFrame(window, w, h);
+        renderFrame(window, w, h);
 
 
         // Handle other events

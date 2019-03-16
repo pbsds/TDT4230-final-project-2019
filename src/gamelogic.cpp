@@ -53,6 +53,10 @@ Gloom::Shader* test_shader;
 Gloom::Shader* plain_shader;
 Gloom::Shader* post_shader;
 
+vec3 cameraPosition = vec3(0, 0, 400);
+vec3 cameraLookAt = vec3(500, 500, 0);
+vec3 cameraUpward = vec3(0, 0, 1);
+
 const vec3 boxDimensions(180, 90, 50);
 const vec3 padDimensions(30, 3, 40);
 
@@ -122,16 +126,17 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh sphere = generateSphere(1.0, 40, 40);
 
     rootNode = createSceneNode();
+    hudNode = createSceneNode();
+    
     boxNode = createSceneNode(NORMAL_TEXTURED_GEOMETRY);
     padNode = createSceneNode();
     ballNode = createSceneNode();
-    hudNode = createSceneNode(HUD);
+
     textNode = createSceneNode(TEXTURED_GEOMETRY);
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
-    rootNode->children.push_back(hudNode);
 
     hudNode->children.push_back(textNode);
     //rootNode->children.push_back(textNode);
@@ -142,7 +147,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     padNode->setMesh(&pad);
     ballNode->setMesh(&sphere);
 
-    // task 1a, add point lights
+    // add lights
     for (int i = 0; i<3; i++) {
         lightNode[i] = createSceneNode(POINT_LIGHT);
         lightNode[i]->lightID = i;
@@ -160,8 +165,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     
     // hud
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
-    textNode->position = vec3(-1.0, 0.0, 0.0);
-    textNode->rotation = vec3(0.0, 0.0, 0.0);
+    textNode->position = vec3(-1.0, -1.0, 0.0);
     textNode->setMesh(&hello_world);
     textNode->setTexture(&t_charmap);
     textNode->isIlluminated = false;
@@ -173,16 +177,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 }
 
 void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 V, mat4 P) {
-
     mat4 transformationMatrix(1.0);
 
     switch(node->nodeType) {
-        case HUD:
-            // We orthographic now, bitches!
-            // set orthographic VP
-            V = mat4(1.0);
-            P = glm::ortho(-float(windowWidth) / float(windowHeight), float(windowWidth) / float(windowHeight), -1.0f, 1.0f);//, -10.0f, 120.0f);
-            break;
         case NORMAL_TEXTURED_GEOMETRY:
         case TEXTURED_GEOMETRY:
         case GEOMETRY:
@@ -218,7 +215,7 @@ void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4
     }
 }
 
-void updateFrame(GLFWwindow* window) {
+void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     double timeDelta = getTimeDeltaSeconds();
 
@@ -345,16 +342,23 @@ void updateFrame(GLFWwindow* window) {
         }
     }
 
-    mat4 projection = glm::perspective(glm::radians(90.0f), float(windowWidth) / float(windowHeight), 0.1f,
-                                            120.f);
+    mat4 projection = glm::perspective(
+        glm::radians(45.0f), // fovy
+        float(windowWidth) / float(windowHeight), // aspect
+        0.1f, 50000.f // near, far
+    );
 
     // hardcoded camera position...
-    mat4 cameraTransform 
-        = glm::translate(mat4(1), vec3(0, 0, 0))
-        * glm::rotate(mat4(1.0), 0.2f, vec3(1, 0, 0))
-        * glm::rotate(mat4(1.0), float(M_PI), vec3(0, 1, 0));
+    mat4 cameraTransform
+        = glm::lookAt(cameraPosition, cameraLookAt, cameraUpward);
 
     updateNodeTransformations(rootNode, mat4(1.0), cameraTransform, projection);
+
+    // We orthographic now, bitches!
+    // set orthographic VP
+    cameraTransform = mat4(1.0);
+    projection = glm::ortho(-float(windowWidth) / float(windowHeight), float(windowWidth) / float(windowHeight), -1.0f, 1.0f);
+    updateNodeTransformations(hudNode, mat4(1.0), cameraTransform, projection);
 
     boxNode->position = {-boxDimensions.x / 2, -boxDimensions.y / 2 - 15, boxDimensions.z - 10};
     padNode->position = {-boxDimensions.x / 2 + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),
@@ -429,7 +433,6 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
             lights[id].push_to_shader(s, id);
             break;
         }
-        case HUD:
         default:
             break;
     }
@@ -439,10 +442,9 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
     }
 }
 
-void renderFrame(GLFWwindow* window) {
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     glViewport(0, 0, windowWidth, windowHeight);
 
     renderNode(rootNode);
+    renderNode(hudNode);
 }
