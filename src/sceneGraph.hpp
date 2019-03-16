@@ -27,19 +27,7 @@ enum SceneNodeType {
 
 struct SceneNode {
 	SceneNode(SceneNodeType type = GEOMETRY) {
-		position = vec3(0, 0, 0);
-		rotation = vec3(0, 0, 0);
-		scale = vec3(1, 1, 1);
-
-        referencePoint = vec3(0, 0, 0);
-        vertexArrayObjectID = -1;
-        VAOIndexCount = 0;
-
         nodeType = type;
-		targeted_by = nullptr;
-		
-		isIlluminated = true;
-		isInverted = false;
 	}
 	
 	void setMesh(Mesh* mesh) {
@@ -65,9 +53,9 @@ struct SceneNode {
 	vector<SceneNode*> children;
 
 	// The node's position and rotation relative to its parent
-	vec3 position;
-	vec3 rotation;
-	vec3 scale;
+	vec3 position = vec3(0, 0, 0);
+	vec3 rotation = vec3(0, 0, 0);
+	vec3 scale    = vec3(1, 1, 1);
 
 	// set this if the shape uses a custom shader other than the default one
 	Gloom::Shader* shader = nullptr;
@@ -78,26 +66,26 @@ struct SceneNode {
 	mat4 MVnormal; // transpose(inverse(MV))
 
 	// The location of the node's reference point (center of rotation)
-	vec3 referencePoint;
+	vec3 referencePoint = vec3(0, 0, 0);
 
 	// VAO IDs refering to a loaded Mesh and its length
-	int vertexArrayObjectID;
-	uint VAOIndexCount;
+	int vertexArrayObjectID = -1;
+	uint VAOIndexCount = 0;
 	
 	// textures
 	uint diffuseTextureID;
 	uint normalTextureID;
 	
 	// shader flags
-	bool isIlluminated;
-	bool isInverted;
+	bool isIlluminated = true;
+	bool isInverted = false;
 
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
 
 	// for lights:
 	uint lightID;
-	SceneNode* targeted_by; // spot
+	SceneNode* targeted_by = nullptr; // spot
 };
 
 // Struct for keeping track of 2D coordinates
