@@ -19,6 +19,7 @@
 #include <utilities/timeutils.h>
 
 using glm::vec3;
+using glm::vec4;
 using glm::mat4;
 typedef unsigned int uint;
 
@@ -153,40 +154,30 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
-void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 V, mat4 P) {
-    mat4 transformationMatrix(1.0);
+void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 const& V, mat4 const& P) {
+    mat4 transformationMatrix
+        = glm::translate(mat4(1.0), node->position)
+        * glm::translate(mat4(1.0), node->referencePoint)
+        * glm::rotate(mat4(1.0), node->rotation.z, vec3(0,0,1))
+        * glm::rotate(mat4(1.0), node->rotation.y, vec3(0,1,0))
+        * glm::rotate(mat4(1.0), node->rotation.x, vec3(1,0,0))
+        * glm::scale(mat4(1.0), node->scale)
+        * glm::translate(mat4(1.0), -node->referencePoint);
 
-    switch(node->nodeType) {
-        case GEOMETRY:
-            transformationMatrix =
-                    glm::translate(mat4(1.0), node->position)
-                    * glm::translate(mat4(1.0), node->referencePoint)
-                    * glm::rotate(mat4(1.0), node->rotation.z, vec3(0,0,1))
-                    * glm::rotate(mat4(1.0), node->rotation.y, vec3(0,1,0))
-                    * glm::rotate(mat4(1.0), node->rotation.x, vec3(1,0,0))
-                    * glm::translate(mat4(1.0), -node->referencePoint)
-                    * glm::scale(mat4(1.0), node->scale);
-            break;
-        case POINT_LIGHT:
-        case SPOT_LIGHT:
-            transformationMatrix =
-                    glm::translate(mat4(1.0), node->position);
-            break;
-    }
     mat4 M = transformationThusFar * transformationMatrix;
-    mat4 MV = V*M;
 
-    node->MV = MV;
-    node->MVP = P*MV;
-    node->MVnormal = glm::inverse(glm::transpose(MV));
+    node->MV = V*M;
+    node->MVP = P*node->MV;
+    node->MVnormal = glm::inverse(glm::transpose(node->MV));
 
     for(SceneNode* child : node->children) {
         updateNodeTransformations(child, M, V, P);
     }
 
+    // move this into the renderNode method and have it be targeted_node from the spot
     if (node->targeted_by != nullptr) {
         assert(node->targeted_by->nodeType == SPOT_LIGHT);
-        node->targeted_by->rotation = vec3(MV*glm::vec4(node->position, 1.0));
+        node->targeted_by->rotation = vec3(node->MV*vec4(node->position, 1.0));
     }
 }
 
@@ -236,10 +227,9 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     mat4 projection = glm::perspective(
         glm::radians(45.0f), // fovy
         float(windowWidth) / float(windowHeight), // aspect
-        0.1f, 50000.f // near, far
+        0.1f, 5000.f // near, far
     );
 
-    // hardcoded camera position...
     mat4 cameraTransform
         = glm::lookAt(cameraPosition, cameraLookAt, cameraUpward);
 
@@ -258,25 +248,28 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
 void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) {
     struct Light { // lights as stored in the shader
         // coordinates in MV space
-        vec3  position;
-        vec3  spot_target;
-        bool  is_spot;
-        float spot_cuttof_angle;
+        vec3  position; // MV
         vec3  attenuation;
         vec3  color_emissive;
         vec3  color_diffuse;
         vec3  color_specular;
         
+        bool  is_spot;
+        vec3  spot_target; // MV
+        float spot_cuttof_angle;
+        
         void push_to_shader(Gloom::Shader* shader, uint id) {
-            #define l(x) shader->location("light[" + std::to_string(id) + "]." + #x)
-                glUniform1i (l(is_spot)          ,    is_spot);
-                glUniform1f (l(spot_cuttof_angle),    spot_cuttof_angle);
-                glUniform3fv(l(position)         , 1, glm::value_ptr(position));
-                glUniform3fv(l(spot_target)      , 1, glm::value_ptr(spot_target));
-                glUniform3fv(l(attenuation)      , 1, glm::value_ptr(attenuation));
-                glUniform3fv(l(color_emissive)   , 1, glm::value_ptr(color_emissive));
-                glUniform3fv(l(color_diffuse)    , 1, glm::value_ptr(color_diffuse));
-                glUniform3fv(l(color_specular)   , 1, glm::value_ptr(color_specular));
+            #define L(x) shader->location("light[" + std::to_string(id) + "]." #x)
+            #define V(x) glUniform3fv(L(x), 1, glm::value_ptr(x))
+                glUniform1i (L(is_spot)          , is_spot);
+                glUniform1f (L(spot_cuttof_angle), spot_cuttof_angle);
+                V(position);
+                V(spot_target);
+                V(attenuation);
+                V(color_emissive);
+                V(color_diffuse);
+                V(color_specular);
+            #undef v
             #undef l
         }
     };
@@ -300,6 +293,7 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
                 glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
                 glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
                 glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
+                glUniform2fv(s->location("uvOffset")      , 1,           glm::value_ptr(node->uvOffset));
                 glUniform1f( s->location("shinyness"),               node->shinyness);
                 glUniform1f( s->location("displacementCoefficient"), node->displacementCoefficient);
                 glUniform1ui(s->location("isTextured"),              node->isTextured);
@@ -318,10 +312,10 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
         case SPOT_LIGHT:
         case POINT_LIGHT: {
             uint id = node->lightID;
-            lights[id].position          = vec3(node->MV * glm::vec4(node->position, 1.0));
+            lights[id].position          = vec3(node->MV * vec4(1.0));
             lights[id].is_spot           = node->nodeType == SPOT_LIGHT;
-            lights[id].spot_target       = node->rotation;
-            lights[id].spot_cuttof_angle = node->spot_cuttof_angle;
+            lights[id].spot_target       = node->rotation; // already MV space, todo: change this
+            lights[id].spot_cuttof_angle = glm::sin(node->spot_cuttof_angle);
             lights[id].attenuation       = node->attenuation;
             lights[id].color_emissive    = node->color_emissive;
             lights[id].color_diffuse     = node->color_diffuse;

@@ -3,7 +3,8 @@
 in layout(location = 0) vec3 vertex;
 in layout(location = 1) vec3 normal;
 in layout(location = 2) vec2 UV;
-in layout(location = 3) mat3 TBN;
+in layout(location = 3) vec3 tangent;
+in layout(location = 4) vec3 bitangent;
 
 layout(binding = 0) uniform sampler2D diffuseTexture;
 layout(binding = 1) uniform sampler2D normalTexture;
@@ -45,11 +46,36 @@ out vec4 color;
 vec4 phong(vec4 basecolor) {
     vec3 nnormal; // normalized normal
     if (isNormalMapped) {
-        vec3 tangential = texture(normalTexture, UV).rgb * 2.0 - 1.0;
-        nnormal = TBN * normalize(tangential);
+        mat3 TBN;
+        if (isDisplacementMapped) {
+            float o = texture(displacementTexture, UV).r * 2.0 - 1.0;
+            float u = (texture(displacementTexture, UV + vec2(0.0001, 0.0)).r*2.0-1.0 - o) / 0.0004; // magic numbers are great
+            float v = (texture(displacementTexture, UV + vec2(0.0, 0.0001)).r*2.0-1.0 - o) / 0.0004; // magic numbers are great
+            TBN = mat3(
+                normalize(tangent   + normal*u),
+                normalize(bitangent + normal*v),
+                normalize(cross(tangent + normal*u, bitangent + normal*v))
+            );
+        }
+        else {
+            TBN = mat3(
+                normalize(tangent),
+                normalize(bitangent),
+                normalize(normal)
+            );
+        }
+        nnormal = TBN * normalize(texture(normalTexture, UV).rgb * 2.0 - 1.0);
     }
     else {
-        nnormal = normalize(normal);
+        if (isDisplacementMapped) {
+            float o = texture(displacementTexture, UV).r * 2.0 - 1.0;
+            float u = (texture(displacementTexture, UV + vec2(0.0001, 0.0)).r*2.0-1.0 - o) / 0.0004;
+            float v = (texture(displacementTexture, UV + vec2(0.0, 0.0001)).r*2.0-1.0 - o) / 0.0004;
+            nnormal = normalize(cross(tangent + normal*u, bitangent + normal*v));
+        }
+        else {
+            nnormal = normalize(normal);
+        }
     }
 
     vec3 emmissive_component = vec3(0.0);
@@ -74,14 +100,14 @@ vec4 phong(vec4 basecolor) {
             ), 0.0, 1.25);
 
         float diffuse_i = dot(nnormal, L);
-        float specular_i = dot(reflect(-L, nnormal), vec3(0.0)-normalize(vertex));
+        float specular_i = dot(reflect(-L, nnormal), -normalize(vertex));
         specular_i = (specular_i>0)
             ? pow(specular_i, shinyness)
             : 0;
 
         emmissive_component += light[i].color_emissive;
-        if (diffuse_i>0)  diffuse_component  += light[i].color_diffuse  * diffuse_i  * attenuation;
         specular_component += light[i].color_specular * specular_i * attenuation;
+        if (diffuse_i>0)  diffuse_component  += light[i].color_diffuse  * diffuse_i  * attenuation;
     }
 
     return vec4(basecolor.rgb * (emmissive_component + diffuse_component) + specular_component, basecolor.a);
