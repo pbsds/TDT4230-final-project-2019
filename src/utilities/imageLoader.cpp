@@ -8,7 +8,7 @@ using std::vector;
 typedef unsigned int uint;
 
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
-PNGImage loadPNGFile(std::string fileName) {
+PNGImage loadPNGFile(std::string fileName, bool flip_handedness) {
 	vector<unsigned char> png;
 	vector<unsigned char> pixels; //the raw pixels
 	uint width, height;
@@ -33,6 +33,19 @@ PNGImage loadPNGFile(std::string fileName) {
 	for(uint row = 0; row < (height / 2); row++) {
 		for(uint col = 0; col < widthBytes; col++) {
 			std::swap(pixels[row * widthBytes + col], pixels[(height - 1 - row) * widthBytes + col]);
+		}
+	}
+
+	if (flip_handedness) {
+		for (uint xb = 0; xb < widthBytes; xb+=4)
+		for (uint y = 0; y < height; y++) {
+			unsigned char& r = pixels[y*widthBytes + xb + 0];
+			unsigned char& g = pixels[y*widthBytes + xb + 1];
+			unsigned char& b = pixels[y*widthBytes + xb + 2];
+			unsigned char& a = pixels[y*widthBytes + xb + 3];
+			
+			r = 255 - r;
+			g = 255 - g;
 		}
 	}
 

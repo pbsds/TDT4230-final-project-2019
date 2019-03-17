@@ -197,6 +197,9 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
             normals[i + 2] *= -1;
         }
     }
+    
+    //2fix4u
+    for(vec3& normal : normals) normal *= -1;
 
     Mesh mesh;
     mesh.vertices = vertices;

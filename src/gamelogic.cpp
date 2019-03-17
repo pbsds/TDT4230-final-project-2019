@@ -35,8 +35,6 @@ uint previousKeyFrame = 0;
 SceneNode* rootNode;
 SceneNode* plainNode;
 SceneNode* boxNode;
-SceneNode* ballNode;
-SceneNode* padNode;
 SceneNode* hudNode;
 SceneNode* textNode;
 
@@ -70,8 +68,8 @@ PNGImage t_charmap       = loadPNGFile("../res/textures/charmap.png");
 PNGImage t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
 PNGImage t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
 PNGImage t_plain_diff    = loadPNGFile("../res/textures/plain_diff.png");
-PNGImage t_plain_normal  = loadPNGFile("../res/textures/plain_normal.png");
-PNGImage t_perlin        = makePerlinNoisePNG(256, 256, {0.1, 0.2, 0.3});
+PNGImage t_plain_normal  = loadPNGFile("../res/textures/plain_normal.png", true);
+PNGImage t_perlin        = makePerlinNoisePNG(256, 256, 0.05/16);
 
 
 void mouseCallback(GLFWwindow* window, double x, double y) {
@@ -114,30 +112,46 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     default_shader = new Gloom::Shader();
     default_shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     
-    Mesh plain = generateSegmentedPlane(1000, 1000, 100, 100);
+    Mesh box = generateBox(50, 50, 50);
+    Mesh plain = generateSegmentedPlane(1000, 1000, 100, 100, 3);
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
+    t_perlin.repeat_mirrored = true;
 
     rootNode = createSceneNode();
     hudNode = createSceneNode();
     
-    plainNode = createSceneNode();
-    plainNode->setTexture(&t_plain_diff, &t_plain_normal);
-    plainNode->setMesh(&plain);
-    plainNode->position = {0, 0, 0};
-    plainNode->shinyness = 30;
-    rootNode->children.push_back(plainNode);
-
-    // add lights
+    // create and add lights to graph
     for (uint i = 0; i<N_LIGHTS; i++) {
         lightNode[i] = createSceneNode(POINT_LIGHT);
         lightNode[i]->lightID = i;
-        rootNode->children.push_back(lightNode[0]);
+        rootNode->children.push_back(lightNode[i]);
     }
-    lightNode[0]->position = {200, 800, 600};
-    lightNode[0]->color_emissive = vec3(0.2);
-    lightNode[0]->color_diffuse  = vec3(0.8);
-    lightNode[0]->color_specular = vec3(0.0);
-    lightNode[0]->attenuation = vec3(1.0, 0.0, 0.000000);
+    
+    //create the scene:
+    plainNode = createSceneNode();
+    plainNode->setTexture(&t_plain_diff, &t_plain_normal, &t_perlin);
+    plainNode->setMesh(&plain);
+    plainNode->position = {0, 0, 0};
+    plainNode->shinyness = 20;
+    plainNode->displacementCoefficient = 40;
+    rootNode->children.push_back(plainNode);
+    
+    boxNode = createSceneNode();
+    boxNode->setTexture(&t_cobble_diff, &t_cobble_normal);
+    boxNode->setMesh(&box);
+    boxNode->position = {500, 500, 40};
+    boxNode->referencePoint = {25, 25, 25};
+    boxNode->scale *= 2;
+    boxNode->shinyness = 20;
+    boxNode->displacementCoefficient = 40;
+    rootNode->children.push_back(boxNode);
+
+    
+    lightNode[0]->position = {-600, 1400, 800};
+    lightNode[0]->color_emissive = vec3(0.35);
+    lightNode[0]->color_diffuse  = vec3(0.6);
+    lightNode[0]->color_specular = vec3(0.1);
+    lightNode[0]->attenuation = vec3(1.0, 0.0, 0.0);
     
     
     textNode = createSceneNode();
@@ -242,6 +256,10 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     updateNodeTransformations(hudNode, mat4(1.0), cameraTransform, projection);
 
     // update positions of nodes (like the car)
+    plainNode->uvOffset.x += timeDelta*0.5;
+    plainNode->uvOffset.y -= timeDelta*0.5;
+    boxNode->rotation.z += timeDelta;
+    lightNode[1]->rotation.z -= timeDelta;
 }
 
 
