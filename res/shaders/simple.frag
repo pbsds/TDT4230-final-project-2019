@@ -3,8 +3,9 @@
 in layout(location = 0) vec3 vertex;
 in layout(location = 1) vec3 normal;
 in layout(location = 2) vec2 UV;
-in layout(location = 3) vec3 tangent;
-in layout(location = 4) vec3 bitangent;
+in layout(location = 3) vec4 color;
+in layout(location = 4) vec3 tangent;
+in layout(location = 5) vec3 bitangent;
 
 layout(binding = 0) uniform sampler2D diffuseTexture;
 layout(binding = 1) uniform sampler2D normalTexture;
@@ -15,10 +16,12 @@ uniform mat4 MVP;
 uniform mat4 MV;
 uniform mat4 MVnormal;
 
-uniform float shinyness;
+uniform float shininess;
+uniform vec4 basecolor;
 
 uniform bool isIlluminated;
 uniform bool isTextured;
+uniform bool isColorMapped;
 uniform bool isNormalMapped;
 uniform bool isDisplacementMapped;
 uniform bool isInverted;
@@ -40,7 +43,7 @@ struct Light { // point lights, coordinates in MV space
 uniform Light light[N_LIGHTS];
 
 
-out vec4 color;
+out vec4 color_out;
 
 
 vec4 phong(vec4 basecolor) {
@@ -102,7 +105,7 @@ vec4 phong(vec4 basecolor) {
         float diffuse_i = dot(nnormal, L);
         float specular_i = dot(reflect(-L, nnormal), -normalize(vertex));
         specular_i = (specular_i>0)
-            ? pow(specular_i, shinyness)
+            ? pow(specular_i, shininess)
             : 0;
 
         emmissive_component += light[i].color_emissive;
@@ -114,14 +117,10 @@ vec4 phong(vec4 basecolor) {
 }
 
 void main() {
-    if(isIlluminated) {
-        if (isTextured) {
-            color = phong(texture(diffuseTexture, UV));
-        } else {
-            color = phong(vec4(1.0));
-        }
-    } else {
-        color = texture(diffuseTexture, UV);
-    }
-    if (isInverted) color.rgb = 1 - color.rgb;
+    vec4 c = basecolor;
+    if (isColorMapped) c *= color;
+    if (isTextured)    c *= texture(diffuseTexture, UV);
+    if (isIlluminated) c = phong(c);
+    if (isInverted)    c.rgb = 1 - c.rgb;
+    color_out = c;
 }

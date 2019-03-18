@@ -2,7 +2,7 @@
 # Specify minimum CMake version and project name
 #
 cmake_minimum_required (VERSION 3.0)
-project (glowbox)
+project (plain_of_awesome)
 
 #
 # CMake setup
@@ -37,6 +37,12 @@ option (SFML_BUILD_WINDOW OFF)
 option (SFML_BUILD_NETWORK OFF)
 add_subdirectory(lib/SFML)
 
+# assimp
+set(BUILD_ASSIMP_TOOLS  ON)
+set(ASSIMP_BUILD_STATIC_LIB ON)
+add_subdirectory(lib/assimp)
+link_directories("lib/assimp/build/code")
+
 #
 # Set include paths
 #
@@ -47,6 +53,7 @@ include_directories (src/
                      lib/glm/
                      lib/stb/
                      lib/arrrgh/
+                     lib/assimp/include/
                      lib/SFML/include/)
 
 #
@@ -88,5 +95,6 @@ add_executable (${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
 target_link_libraries (${PROJECT_NAME}
                        glfw
                        sfml-audio
+                       assimp
                        ${GLFW_LIBRARIES}
                        ${GLAD_LIBRARIES})

@@ -28,3 +28,6 @@
 [submodule "lib/lodepng"]
 	path = lib/lodepng
 	url = https://github.com/lvandeve/lodepng
+[submodule "lib/assimp"]
+	path = lib/assimp
+	url = git@github.com:assimp/assimp.git

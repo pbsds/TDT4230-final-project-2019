@@ -18,6 +18,7 @@
 
 using glm::vec2;
 using glm::vec3;
+using glm::vec4;
 using glm::mat4;
 using std::map;
 using std::vector;
@@ -34,17 +35,18 @@ struct SceneNode {
         nodeType = type;
 	}
 	
-	void setMesh(Mesh* mesh) {
-		static map<Mesh*, int> cache;
+	void setMesh(const Mesh* mesh) {
+		static map<const Mesh*, int> cache;
 
 		if (cache.find(mesh) == cache.end())
 			cache[mesh] = generateBuffer(*mesh, isNormalMapped || isDisplacementMapped);
 
 		vertexArrayObjectID = cache[mesh];
 		VAOIndexCount = mesh->indices.size();
+		isColorMapped = ! mesh->colors.empty();
 	}
-	void setTexture(PNGImage* diffuse, PNGImage* normal=nullptr, PNGImage* displacement=nullptr) {
-		static map<PNGImage*, int> cache;
+	void setTexture(const PNGImage* diffuse, const PNGImage* normal=nullptr, const PNGImage* displacement=nullptr) {
+		static map<const PNGImage*, int> cache;
 		assert(vertexArrayObjectID==-1);
 		isTextured = false;
 		isNormalMapped = false;
@@ -96,7 +98,8 @@ struct SceneNode {
 	uint VAOIndexCount = 0;
 
 	// textures
-	float shinyness = 10.0; // specular power
+	float shininess = 10.0; // specular power
+	vec4 basecolor = vec4(1.0);
 	vec2 uvOffset = vec2(0.0, 0.0); // specular power
 	uint diffuseTextureID;
 	uint normalTextureID;
@@ -105,6 +108,7 @@ struct SceneNode {
 
 	// shader flags
 	bool isTextured = false;
+	bool isColorMapped = false;
 	bool isNormalMapped = false;
 	bool isDisplacementMapped = false;
 	bool isIlluminated = true;

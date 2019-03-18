@@ -4,11 +4,12 @@
 #include "glutils.h"
 
 using std::vector;
+using glm::vec4;
 using glm::vec3;
 using glm::vec2;
 typedef unsigned int uint;
 
-uint generateBuffer(Mesh &mesh, bool isNormalMapped) {
+uint generateBuffer(const Mesh &mesh, bool doAddTangents) {
     uint vaoID;
     glGenVertexArrays(1, &vaoID);
     glBindVertexArray(vaoID);
@@ -32,21 +33,31 @@ uint generateBuffer(Mesh &mesh, bool isNormalMapped) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(uint), mesh.indices.data(), GL_STATIC_DRAW);
 
-    if (mesh.textureCoordinates.empty()) return vaoID;
+    if (!mesh.textureCoordinates.empty()) {
+        uint textureBufferID;
+        glGenBuffers(1, &textureBufferID);
+        glBindBuffer(GL_ARRAY_BUFFER, textureBufferID);
+        glBufferData(GL_ARRAY_BUFFER, mesh.textureCoordinates.size() * sizeof(vec2), mesh.textureCoordinates.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+        glEnableVertexAttribArray(2);
+    }
+
+    if (!mesh.colors.empty()) {
+        uint colorBufferID;
+        glGenBuffers(1, &colorBufferID);
+        glBindBuffer(GL_ARRAY_BUFFER, colorBufferID);
+        glBufferData(GL_ARRAY_BUFFER, mesh.colors.size() * sizeof(vec4), mesh.colors.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+        glEnableVertexAttribArray(3);
+    }
+
+    if (doAddTangents && !mesh.textureCoordinates.empty())
+        addTangents(vaoID, mesh);
     
-    uint textureBufferID;
-    glGenBuffers(1, &textureBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, textureBufferID);
-    glBufferData(GL_ARRAY_BUFFER, mesh.textureCoordinates.size() * sizeof(vec2), mesh.textureCoordinates.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-    glEnableVertexAttribArray(2);
-
-    if (isNormalMapped) addTangents(vaoID, mesh);
-
     return vaoID;
 }
 
-void addTangents(uint vaoID, Mesh& mesh) {
+void addTangents(uint vaoID, const Mesh& mesh) {
     vector<vec3> tangents(mesh.vertices.size());
     vector<vec3> bitangents(mesh.vertices.size());
     
@@ -95,15 +106,15 @@ void addTangents(uint vaoID, Mesh& mesh) {
     glGenBuffers(1, &tangentBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, tangentBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(vec3), tangents.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(4);
     
     uint bitangentBufferID;
     glGenBuffers(1, &bitangentBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, bitangentBufferID);
     glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(vec3), bitangents.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(5);
 }
 
 uint generateTexture(const PNGImage& texture) {

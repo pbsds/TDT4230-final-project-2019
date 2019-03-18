@@ -132,7 +132,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     plainNode->setTexture(&t_plain_diff, &t_plain_normal, &t_perlin);
     plainNode->setMesh(&plain);
     plainNode->position = {0, 0, 0};
-    plainNode->shinyness = 20;
+    plainNode->shininess = 20;
     plainNode->displacementCoefficient = 40;
     rootNode->children.push_back(plainNode);
     
@@ -142,7 +142,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->position = {500, 500, 40};
     boxNode->referencePoint = {25, 25, 25};
     boxNode->scale *= 2;
-    boxNode->shinyness = 20;
+    boxNode->shininess = 20;
     boxNode->displacementCoefficient = 40;
     rootNode->children.push_back(boxNode);
 
@@ -258,7 +258,7 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     // update positions of nodes (like the car)
     plainNode->uvOffset.x += timeDelta*0.5;
     plainNode->uvOffset.y -= timeDelta*0.5;
-    boxNode->rotation.z += timeDelta;
+    if (boxNode) boxNode->rotation.z += timeDelta;
     lightNode[1]->rotation.z -= timeDelta;
 }
 
@@ -312,9 +312,11 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
                 glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
                 glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
                 glUniform2fv(s->location("uvOffset")      , 1,           glm::value_ptr(node->uvOffset));
-                glUniform1f( s->location("shinyness"),               node->shinyness);
+                glUniform4fv(s->location("basecolor")     , 1,           glm::value_ptr(node->basecolor));
+                glUniform1f( s->location("shininess"),               node->shininess);
                 glUniform1f( s->location("displacementCoefficient"), node->displacementCoefficient);
                 glUniform1ui(s->location("isTextured"),              node->isTextured);
+                glUniform1ui(s->location("isColorMapped"),           node->isColorMapped);
                 glUniform1ui(s->location("isNormalMapped"),          node->isNormalMapped);
                 glUniform1ui(s->location("isDisplacementMapped"),    node->isDisplacementMapped);
                 glUniform1ui(s->location("isIlluminated"),           node->isIlluminated);
@@ -330,7 +332,7 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
         case SPOT_LIGHT:
         case POINT_LIGHT: {
             uint id = node->lightID;
-            lights[id].position          = vec3(node->MV * vec4(1.0));
+            lights[id].position          = vec3(node->MV * vec4(vec3(0.0), 1.0));
             lights[id].is_spot           = node->nodeType == SPOT_LIGHT;
             lights[id].spot_target       = node->rotation; // already MV space, todo: change this
             lights[id].spot_cuttof_angle = glm::sin(node->spot_cuttof_angle);
