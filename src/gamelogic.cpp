@@ -13,6 +13,7 @@
 #include <utilities/glfont.h>
 #include <utilities/glutils.h>
 #include <utilities/imageLoader.hpp>
+#include <utilities/modelLoader.hpp>
 #include <utilities/mesh.h>
 #include <utilities/shader.hpp>
 #include <utilities/shapes.h>
@@ -34,7 +35,9 @@ uint previousKeyFrame = 0;
 
 SceneNode* rootNode;
 SceneNode* plainNode;
+SceneNode* carNode;
 SceneNode* boxNode;
+SceneNode* sphereNode;
 SceneNode* hudNode;
 SceneNode* textNode;
 
@@ -113,6 +116,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     default_shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     
     Mesh box = generateBox(50, 50, 50);
+    Mesh sphere = generateSphere(10, 100, 100);
     Mesh plain = generateSegmentedPlane(1000, 1000, 100, 100, 3);
     Mesh hello_world = generateTextGeometryBuffer("Skjer'a bagera?", 1.3, 2);
     t_perlin.repeat_mirrored = true;
@@ -127,6 +131,28 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         rootNode->children.push_back(lightNode[i]);
     }
     
+    
+    carNode = loadModelScene("../res/models/beetle/scene.gltf", {
+        {-1, Material::diffuse({0.3, 0.3, 1.0, 1.0}, 30)},// default
+        //{ 0, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Blue_Metal
+        //{ 1, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Metal
+        //{ 2, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Front_Light_Glass
+        { 3, Material::diffuse({0.2, 0.2, 0.2, 1.0})},// Black_Rubber
+        //{ 4, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Mirror
+        //{ 5, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Black_Metal
+        //{ 6, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Plastic
+        { 7, Material::diffuse({0.1, 0.1, 0.1, 1.0})},// Window_Glass
+        //{ 8, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Material
+        //{ 9, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Glossy_metal
+        //{10, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Rogh_Metal
+        //{11, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// License_Plate_Metal
+        //{12, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// License_Plate_Frame
+        //{13, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// 
+        });
+    carNode->position = {500, 500, 100};
+    carNode->scale *= 100;
+    rootNode->children.push_back(carNode);
+    
     //create the scene:
     plainNode = createSceneNode();
     plainNode->setTexture(&t_plain_diff, &t_plain_normal, &t_perlin);
@@ -136,6 +162,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     plainNode->displacementCoefficient = 40;
     rootNode->children.push_back(plainNode);
     
+    /*
     boxNode = createSceneNode();
     boxNode->setTexture(&t_cobble_diff, &t_cobble_normal);
     boxNode->setMesh(&box);
@@ -145,7 +172,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->shininess = 20;
     boxNode->displacementCoefficient = 40;
     rootNode->children.push_back(boxNode);
-
+    
+    sphereNode = createSceneNode();
+    sphereNode->setTexture(&t_cobble_diff, &t_cobble_normal);
+    sphereNode->setMesh(&sphere);
+    sphereNode->scale *= 2;
+    sphereNode->scale.z *= 20;
+    //lightNode[1]->children.push_back(sphereNode);
+    */
     
     lightNode[0]->position = {-600, 1400, 800};
     lightNode[0]->color_emissive = vec3(0.35);
