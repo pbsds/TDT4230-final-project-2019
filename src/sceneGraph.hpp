@@ -32,78 +32,16 @@ enum SceneNodeType {
 };
 
 struct SceneNode {
-	SceneNode(SceneNodeType type = GEOMETRY) {
-        nodeType = type;
-	}
+	SceneNode(SceneNodeType type = GEOMETRY);
 	
-	void setMesh(const Mesh* mesh) {
-		static map<const Mesh*, int> cache;
-
-		if (cache.find(mesh) == cache.end())
-			cache[mesh] = generateBuffer(*mesh, isNormalMapped || isDisplacementMapped);
-
-		vertexArrayObjectID = cache[mesh];
-		VAOIndexCount = mesh->indices.size();
-		isVertexColored = ! mesh->colors.empty();
-	}
+	void setMesh(const Mesh* mesh);
 	void setTexture(
 				const PNGImage* diffuse,
 				const PNGImage* normal=nullptr,
 				const PNGImage* displacement=nullptr,
 				const PNGImage* reflection=nullptr,
-				bool texture_reset=true) {
-		static map<const PNGImage*, int> cache;
-		if (texture_reset){
-			isTextured = false;
-			isNormalMapped = false;
-			isDisplacementMapped = false;
-			isReflectionMapped = false;
-		}
-
-		if (diffuse) {
-			if (cache.find(diffuse) == cache.end())
-				cache[diffuse] = generateTexture(*diffuse);
-			diffuseTextureID = cache[diffuse];
-			isTextured = true;
-		}
-		
-		if (normal) {
-			if (cache.find(normal) == cache.end())
-				cache[normal] = generateTexture(*normal);
-			normalTextureID = cache[normal];
-			isNormalMapped  = true;
-		}
-		
-		if (displacement) {
-			if (cache.find(displacement) == cache.end())
-				cache[displacement] = generateTexture(*displacement);
-			displacementTextureID = cache[displacement];
-			isDisplacementMapped  = true;
-		}
-		
-		if (reflection) {
-			if (cache.find(reflection) == cache.end())
-				cache[reflection] = generateTexture(*reflection);
-			reflectionTextureID = cache[reflection];
-			isReflectionMapped  = true;
-		}
-	}
-	void setMaterial(const Material& mat, bool recursive=false) {
-		reflexiveness = mat.reflexiveness;
-		if (!mat.ignore_diffuse)  diffuse_color  = mat.diffuse_color;
-		if (!mat.ignore_emissive) emissive_color = mat.emissive_color;
-		if (!mat.ignore_specular) specular_color = mat.specular_color;
-		if (!mat.ignore_specular) shininess      = mat.shininess;
-		setTexture(
-			mat.diffuse_texture,
-			mat.normal_texture,
-			mat.displacement_texture,
-			mat.reflection_texture,
-			mat.texture_reset
-		);
-		if (recursive) for (SceneNode* child : children)
-			child->setMaterial(mat, true);
-	}
+				bool texture_reset=true);
+	void setMaterial(const Material& mat, bool recursive=false);
 	
 	// this node
 	SceneNodeType nodeType;
