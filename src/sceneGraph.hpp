@@ -43,14 +43,20 @@ struct SceneNode {
 
 		vertexArrayObjectID = cache[mesh];
 		VAOIndexCount = mesh->indices.size();
-		isColorMapped = ! mesh->colors.empty();
+		isVertexColored = ! mesh->colors.empty();
 	}
-	void setTexture(const PNGImage* diffuse, const PNGImage* normal=nullptr, const PNGImage* displacement=nullptr) {
+	void setTexture(
+				const PNGImage* diffuse,
+				const PNGImage* normal=nullptr,
+				const PNGImage* displacement=nullptr,
+				const PNGImage* reflection=nullptr,
+				bool texture_reset=true) {
 		static map<const PNGImage*, int> cache;
-		assert(vertexArrayObjectID==-1);
-		isTextured = false;
-		isNormalMapped = false;
-		isDisplacementMapped = false;
+		if (texture_reset){
+			isTextured = false;
+			isNormalMapped = false;
+			isDisplacementMapped = false;
+		}
 
 		if (diffuse) {
 			if (cache.find(diffuse) == cache.end())
@@ -73,18 +79,32 @@ struct SceneNode {
 			isDisplacementMapped  = true;
 		}
 	}
+	void setMaterial(const Material& mat, bool recursive=false) {
+		if (!mat.ignore_diffuse)  diffuse_color  = mat.diffuse_color;
+		if (!mat.ignore_emissive) emissive_color = mat.emissive_color;
+		if (!mat.ignore_specular) specular_color = mat.specular_color;
+		if (!mat.ignore_specular) shininess      = mat.shininess;
+		setTexture(
+			mat.diffuse_texture,
+			mat.normal_texture,
+			mat.displacement_texture,
+			mat.reflection_texture,
+			mat.texture_reset
+		);
+		if (recursive) for (SceneNode* child : children)
+			child->setMaterial(mat, true);
+	}
 	
 	// this node
 	SceneNodeType nodeType;
 	vector<SceneNode*> children;
 
 	// light specific:
-	uint  lightID        = -1;
-	vec3  color_emissive = vec3(0.0);
-	vec3  color_diffuse  = vec3(0.0);
-	vec3  color_specular = vec3(0.0);
-	vec3  attenuation    = vec3(1.0, 0.0, 0.001); // 1 / (x + y*l + z*l*l)
-	float spot_cuttof_angle = glm::radians(1.5); // radians
+	uint lightID = -1;
+	vec3 light_color = vec3(1.0);
+	vec3 attenuation = vec3(1.0, 0.0, 0.001); // 1 / (x + y*l + z*l*l)
+	vec3 spot_direction = vec3(0.0); // in MV space, must be normalized
+	float spot_cuttof_cos = glm::cos(glm::radians(1.5));
 	SceneNode* targeted_by  = nullptr; // spot will follow this node
 
 	// The node's position and rotation relative to its parent
@@ -97,9 +117,12 @@ struct SceneNode {
 	int vertexArrayObjectID = -1;
 	uint VAOIndexCount = 0;
 
-	// textures
-	float shininess = 10.0; // specular power
-	vec4 basecolor = vec4(1.0);
+	// textures and materials
+	float opacity = 1.0;
+	float shininess = 1.0; // specular power
+	vec3 diffuse_color  = vec3(1.0);
+	vec3 emissive_color = vec3(0.5);
+	vec3 specular_color = vec3(0.2);
 	vec2 uvOffset = vec2(0.0, 0.0); // specular power
 	uint diffuseTextureID;
 	uint normalTextureID;
@@ -108,7 +131,7 @@ struct SceneNode {
 
 	// shader flags
 	bool isTextured = false;
-	bool isColorMapped = false;
+	bool isVertexColored = false;
 	bool isNormalMapped = false;
 	bool isDisplacementMapped = false;
 	bool isIlluminated = true;

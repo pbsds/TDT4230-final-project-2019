@@ -172,20 +172,19 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->shininess = 20;
     boxNode->displacementCoefficient = 40;
     rootNode->children.push_back(boxNode);
-    
-    sphereNode = createSceneNode();
-    sphereNode->setTexture(&t_cobble_diff, &t_cobble_normal);
-    sphereNode->setMesh(&sphere);
-    sphereNode->scale *= 2;
-    sphereNode->scale.z *= 20;
-    //lightNode[1]->children.push_back(sphereNode);
     */
     
+    sphereNode = createSceneNode();
+    //sphereNode->setTexture(&t_cobble_diff, &t_cobble_normal);
+    sphereNode->setMesh(&sphere);
+    sphereNode->position = {500, 500, 100};
+    sphereNode->scale *= 15;
+    sphereNode->diffuse_color;
+    sphereNode->setMaterial(Material().reflection_mapped(&t_reflection, 0.5).no_colors().no_texture_reset(), true);
+    //rootNode->children.push_back(sphereNode);
+    
     lightNode[0]->position = {-600, 1400, 800};
-    lightNode[0]->color_emissive = vec3(0.35);
-    lightNode[0]->color_diffuse  = vec3(0.6);
-    lightNode[0]->color_specular = vec3(0.1);
-    lightNode[0]->attenuation = vec3(1.0, 0.0, 0.0);
+    lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0);
     
     
     textNode = createSceneNode();
@@ -302,27 +301,23 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
         // coordinates in MV space
         vec3  position; // MV
         vec3  attenuation;
-        vec3  color_emissive;
-        vec3  color_diffuse;
-        vec3  color_specular;
+        vec3  color;
         
         bool  is_spot;
-        vec3  spot_target; // MV
-        float spot_cuttof_angle;
+        vec3  spot_direction; // MV, must be normalized
+        float spot_cuttof_cos;
         
         void push_to_shader(Gloom::Shader* shader, uint id) {
             #define L(x) shader->location("light[" + std::to_string(id) + "]." #x)
             #define V(x) glUniform3fv(L(x), 1, glm::value_ptr(x))
                 glUniform1i (L(is_spot)          , is_spot);
-                glUniform1f (L(spot_cuttof_angle), spot_cuttof_angle);
+                glUniform1f (L(spot_cuttof_cos), spot_cuttof_cos);
                 V(position);
-                V(spot_target);
+                V(spot_direction);
                 V(attenuation);
-                V(color_emissive);
-                V(color_diffuse);
-                V(color_specular);
-            #undef v
-            #undef l
+                V(color);
+            #undef V
+            #undef L
         }
     };
     static Light lights[N_LIGHTS];
@@ -346,16 +341,21 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
                 glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
                 glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
                 glUniform2fv(s->location("uvOffset")      , 1,           glm::value_ptr(node->uvOffset));
-                glUniform4fv(s->location("basecolor")     , 1,           glm::value_ptr(node->basecolor));
+                glUniform3fv(s->location("diffuse_color") , 1,           glm::value_ptr(node->diffuse_color));
+                glUniform3fv(s->location("emissive_color"), 1,           glm::value_ptr(node->emissive_color));
+                glUniform3fv(s->location("specular_color"), 1,           glm::value_ptr(node->specular_color));
+                glUniform1f( s->location("opacity"),                 node->opacity);
                 glUniform1f( s->location("shininess"),               node->shininess);
+                glUniform1f( s->location("reflexiveness"),           node->reflexiveness);
                 glUniform1f( s->location("displacementCoefficient"), node->displacementCoefficient);
                 glUniform1ui(s->location("isTextured"),              node->isTextured);
-                glUniform1ui(s->location("isColorMapped"),           node->isColorMapped);
+                glUniform1ui(s->location("isVertexColored"),         node->isVertexColored);
                 glUniform1ui(s->location("isNormalMapped"),          node->isNormalMapped);
                 glUniform1ui(s->location("isDisplacementMapped"),    node->isDisplacementMapped);
+                glUniform1ui(s->location("isReflectionMapped"),      node->isReflectionMapped);
                 glUniform1ui(s->location("isIlluminated"),           node->isIlluminated);
                 glUniform1ui(s->location("isInverted"),              node->isInverted);
-
+                
                 if (node->isTextured)           glBindTextureUnit(0, node->diffuseTextureID);
                 if (node->isNormalMapped)       glBindTextureUnit(1, node->normalTextureID);
                 if (node->isDisplacementMapped) glBindTextureUnit(2, node->displacementTextureID);
@@ -368,12 +368,10 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
             uint id = node->lightID;
             lights[id].position          = vec3(node->MV * vec4(vec3(0.0), 1.0));
             lights[id].is_spot           = node->nodeType == SPOT_LIGHT;
-            lights[id].spot_target       = node->rotation; // already MV space, todo: change this
-            lights[id].spot_cuttof_angle = glm::sin(node->spot_cuttof_angle);
+            lights[id].spot_direction    = node->spot_direction; // MV space
+            lights[id].spot_cuttof_cos   = node->spot_cuttof_cos;
             lights[id].attenuation       = node->attenuation;
-            lights[id].color_emissive    = node->color_emissive;
-            lights[id].color_diffuse     = node->color_diffuse;
-            lights[id].color_specular    = node->color_specular;
+            lights[id].color             = node->light_color;
             lights[id].push_to_shader(s, id);
             break;
         }

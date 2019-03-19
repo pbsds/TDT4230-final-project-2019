@@ -51,7 +51,7 @@ uint generateBuffer(const Mesh &mesh, bool doAddTangents) {
         glEnableVertexAttribArray(3);
     }
 
-    if (doAddTangents && !mesh.textureCoordinates.empty())
+    if (doAddTangents || !mesh.textureCoordinates.empty())
         addTangents(vaoID, mesh);
     
     return vaoID;

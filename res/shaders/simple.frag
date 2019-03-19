@@ -16,12 +16,16 @@ uniform mat4 MVP;
 uniform mat4 MV;
 uniform mat4 MVnormal;
 
+// material
+uniform float opacity;
 uniform float shininess;
-uniform vec4 basecolor;
+uniform vec3 diffuse_color;
+uniform vec3 specular_color;
+uniform vec3 emissive_color;
 
 uniform bool isIlluminated;
 uniform bool isTextured;
-uniform bool isColorMapped;
+uniform bool isVertexColored;
 uniform bool isNormalMapped;
 uniform bool isDisplacementMapped;
 uniform bool isInverted;
@@ -30,13 +34,11 @@ uniform bool isInverted;
 struct Light { // point lights, coordinates in MV space
     vec3 position;
     vec3 attenuation; // 1 / (x + y*l + z*l*l)
-    vec3 color_emissive;
-    vec3 color_diffuse;
-    vec3 color_specular;
+    vec3 color;
     
     bool is_spot; // false means point light
-    vec3 spot_target;
-    float spot_cuttof_angle;
+    vec3 spot_direction;
+    float spot_cuttof_cos;
 };
 
 #define N_LIGHTS 1
@@ -46,7 +48,7 @@ uniform Light light[N_LIGHTS];
 out vec4 color_out;
 
 
-vec4 phong(vec4 basecolor) {
+vec3 phong(vec3 basecolor) {
     vec3 nnormal; // normalized normal
     if (isNormalMapped) {
         mat3 TBN;
@@ -72,8 +74,8 @@ vec4 phong(vec4 basecolor) {
     else {
         if (isDisplacementMapped) {
             float o = texture(displacementTexture, UV).r * 2.0 - 1.0;
-            float u = (texture(displacementTexture, UV + vec2(0.0001, 0.0)).r*2.0-1.0 - o) / 0.0004;
-            float v = (texture(displacementTexture, UV + vec2(0.0, 0.0001)).r*2.0-1.0 - o) / 0.0004;
+            float u = (texture(displacementTexture, UV + vec2(0.00001, 0.0)).r*2.0-1.0 - o) / 0.00004;
+            float v = (texture(displacementTexture, UV + vec2(0.0, 0.00001)).r*2.0-1.0 - o) / 0.00004;
             nnormal = normalize(cross(tangent + normal*u, bitangent + normal*v));
         }
         else {
@@ -81,9 +83,10 @@ vec4 phong(vec4 basecolor) {
         }
     }
 
-    vec3 emmissive_component = vec3(0.0);
-    vec3 diffuse_component   = vec3(0.0);
-    vec3 specular_component  = vec3(0.0);
+    vec3 diffuse_component  = vec3(0.0);
+    vec3 specular_component = vec3(0.0);
+    float diffuse_i_sum = 0.0;
+    //vec3 emissive_component = vec3(0.0);
 
     for (int i = 0; i<N_LIGHTS; i++) {
         vec3 L = light[i].position - vertex;
@@ -91,7 +94,7 @@ vec4 phong(vec4 basecolor) {
         L = normalize(L);
 
         if (light[i].is_spot) {
-            if (dot(normalize(light[i].position - light[i].spot_target), L) < light[i].spot_cuttof_angle) {
+            if (dot(light[i].spot_direction, -L) < light[i].spot_cuttof_cos) {
                 continue;
             }
         }
@@ -108,19 +111,24 @@ vec4 phong(vec4 basecolor) {
             ? pow(specular_i, shininess)
             : 0;
 
-        emmissive_component += light[i].color_emissive;
-        specular_component += light[i].color_specular * specular_i * attenuation;
-        if (diffuse_i>0)  diffuse_component  += light[i].color_diffuse  * diffuse_i  * attenuation;
+        specular_component += specular_color * light[i].color * specular_i * attenuation;
+        if (diffuse_i>0)  diffuse_component += diffuse_color * light[i].color * diffuse_i * attenuation;
+        //emissive_component += emissive_color*light[i].color*attenuation;
     }
 
-    return vec4(basecolor.rgb * (emmissive_component + diffuse_component) + specular_component, basecolor.a);
+    basecolor *= (emissive_color + diffuse_component);
+    return basecolor + specular_component;
 }
 
 void main() {
-    vec4 c = basecolor;
-    if (isColorMapped) c *= color;
-    if (isTextured)    c *= texture(diffuseTexture, UV);
-    if (isIlluminated) c = phong(c);
-    if (isInverted)    c.rgb = 1 - c.rgb;
+    vec4 c = vec4(vec3(1.0), opacity);
+    if (isVertexColored)    c *= color;
+    if (isTextured)         c *= texture(diffuseTexture, UV);
+    if (isInverted)         c.rgb = 1 - c.rgb;
+    if (isIlluminated)      c.rgb = phong(c.rgb);
+    else                    c.rgb *= diffuse_color;
+    //c.rgb = diffuse_color;
+    //c.rgb = emissive_color;
+    //c.rgb = specular_color;
     color_out = c;
 }
