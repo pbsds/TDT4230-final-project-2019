@@ -1,7 +1,7 @@
 #include "sceneGraph.hpp"
 #include <iostream>
 
-SceneNode::SceneNode(SceneNodeType type = GEOMETRY) {
+SceneNode::SceneNode(SceneNodeType type) {
 	nodeType = type;
 }
 
@@ -16,11 +16,11 @@ void SceneNode::setMesh(const Mesh* mesh) {
 	isVertexColored = ! mesh->colors.empty();
 }
 void SceneNode::setTexture(
-			const PNGImage* diffuse,
-			const PNGImage* normal=nullptr,
-			const PNGImage* displacement=nullptr,
-			const PNGImage* reflection=nullptr,
-			bool texture_reset=true) {
+		const PNGImage* diffuse,
+		const PNGImage* normal,
+		const PNGImage* displacement,
+		const PNGImage* reflection,
+		bool texture_reset) {
 	static map<const PNGImage*, int> cache;
 	if (texture_reset){
 		isTextured = false;
@@ -57,7 +57,7 @@ void SceneNode::setTexture(
 		isReflectionMapped  = true;
 	}
 }
-void SceneNode::setMaterial(const Material& mat, bool recursive=false) {
+void SceneNode::setMaterial(const Material& mat, bool recursive) {
 	reflexiveness = mat.reflexiveness;
 	if (!mat.ignore_diffuse)  diffuse_color  = mat.diffuse_color;
 	if (!mat.ignore_emissive) emissive_color = mat.emissive_color;

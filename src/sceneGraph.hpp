@@ -51,9 +51,9 @@ struct SceneNode {
 	uint lightID = -1;
 	vec3 light_color = vec3(1.0);
 	vec3 attenuation = vec3(1.0, 0.0, 0.001); // 1 / (x + y*l + z*l*l)
-	vec3 spot_direction = vec3(0.0); // in MV space, must be normalized
 	float spot_cuttof_cos = glm::cos(glm::radians(1.5));
-	SceneNode* targeted_by  = nullptr; // spot will follow this node
+	vec3 spot_direction = vec3(0.0); // in MV space, must be normalized, automatically updated by spot_target
+	SceneNode* spot_target  = nullptr; // spot will follow this node
 
 	// The node's position and rotation relative to its parent
 	vec3 position = vec3(0, 0, 0);

@@ -44,7 +44,7 @@ struct Light { // point lights, coordinates in MV space
     float spot_cuttof_cos;
 };
 
-#define N_LIGHTS 2
+#define N_LIGHTS 3
 uniform Light light[N_LIGHTS];
 
 

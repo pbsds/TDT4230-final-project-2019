@@ -24,12 +24,6 @@ using glm::vec4;
 using glm::mat4;
 typedef unsigned int uint;
 
-enum KeyFrameAction {
-    BOTTOM, TOP
-};
-
-#include <timestamps.h>
-
 uint currentKeyFrame = 0;
 uint previousKeyFrame = 0;
 
@@ -42,12 +36,13 @@ SceneNode* sphereNode;
 SceneNode* hudNode;
 SceneNode* textNode;
 
-const uint N_LIGHTS = 2;
+const uint N_LIGHTS = 3;
 SceneNode* lightNode[N_LIGHTS];
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::Sound* sound;
 sf::SoundBuffer* buffer;
+
 Gloom::Shader* default_shader;
 Gloom::Shader* test_shader;
 Gloom::Shader* plain_shader;
@@ -201,6 +196,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     lightNode[1]->light_color = vec3(0.0);
     lightNode[1]->attenuation = vec3(1.0, 0.0, 0.000005);
     
+    lightNode[2]->position = {400, -200, 300};
+    lightNode[2]->nodeType = SPOT_LIGHT;
+    lightNode[2]->attenuation = vec3(1, 0, 0);
+    lightNode[2]->spot_target = lightNode[1];
     
     textNode = createSceneNode();
     textNode->setTexture(&t_charmap);
@@ -216,37 +215,20 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
-void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 const& V, mat4 const& P) {
-    mat4 transformationMatrix
-        = glm::translate(mat4(1.0), node->position)
-        * glm::translate(mat4(1.0), node->referencePoint)
-        * glm::rotate(mat4(1.0), node->rotation.z, vec3(0,0,1))
-        * glm::rotate(mat4(1.0), node->rotation.y, vec3(0,1,0))
-        * glm::rotate(mat4(1.0), node->rotation.x, vec3(1,0,0))
-        * glm::scale(mat4(1.0), node->scale)
-        * glm::translate(mat4(1.0), -node->referencePoint);
-
-    mat4 M = transformationThusFar * transformationMatrix;
-
-    node->MV = V*M;
-    node->MVP = P*node->MV;
-    node->MVnormal = glm::inverse(glm::transpose(node->MV));
-
-    for(SceneNode* child : node->children) {
-        updateNodeTransformations(child, M, V, P);
-    }
-
-    // move this into the renderNode method and have it be targeted_node from the spot
-    if (node->targeted_by != nullptr) {
-        assert(node->targeted_by->nodeType == SPOT_LIGHT);
-        node->targeted_by->rotation = vec3(node->MV*vec4(node->position, 1.0));
-    }
-}
-
-void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    double timeDelta = getTimeDeltaSeconds();
-
+void stepScene(double timeDelta) {
+    static double timeAcc = 0; // shrug
+    timeAcc += timeDelta;
+    
+    plainNode->uvOffset.x += timeDelta*0.5;
+    plainNode->uvOffset.y -= timeDelta*0.5;
+    if (boxNode) boxNode->rotation.z += timeDelta;
+    lightNode[1]->rotation.z -= timeDelta;
+    //lightNode[1]->position.z = 80 + 40*glm::sin(5 * lightNode[1]->rotation.z);
+    //if(carNode) carNode->rotation.z += timeDelta;
+    
+    
+    
+    /*
     if(!hasStarted) {
 
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
@@ -285,10 +267,40 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
 
         }
     }
+    */
+}
 
+void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 const& V, mat4 const& P) {
+    mat4 transformationMatrix
+        = glm::translate(mat4(1.0), node->position)
+        * glm::translate(mat4(1.0), node->referencePoint)
+        * glm::rotate(mat4(1.0), node->rotation.z, vec3(0,0,1))
+        * glm::rotate(mat4(1.0), node->rotation.y, vec3(0,1,0))
+        * glm::rotate(mat4(1.0), node->rotation.x, vec3(1,0,0))
+        * glm::scale(mat4(1.0), node->scale)
+        * glm::translate(mat4(1.0), -node->referencePoint);
+
+    mat4 M = transformationThusFar * transformationMatrix;
+
+    node->MV = V*M;
+    node->MVP = P*node->MV;
+    node->MVnormal = glm::inverse(glm::transpose(node->MV));
+
+    for(SceneNode* child : node->children)
+        updateNodeTransformations(child, M, V, P);
+}
+
+void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    double timeDelta = getTimeDeltaSeconds();
+    
+    stepScene(timeDelta);
+    
+    float aspect = float(windowWidth) / float(windowHeight);
+    
     mat4 projection = glm::perspective(
         glm::radians(45.0f), // fovy
-        float(windowWidth) / float(windowHeight), // aspect
+        aspect, // aspect
         0.1f, 5000.f // near, far
     );
 
@@ -298,20 +310,23 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     updateNodeTransformations(rootNode, mat4(1.0), cameraTransform, projection);
 
     // We orthographic now, bitches!
-    // set orthographic VP
+    // set orthographic VP for hud
     cameraTransform = mat4(1.0);
-    projection = glm::ortho(-float(windowWidth) / float(windowHeight), float(windowWidth) / float(windowHeight), -1.0f, 1.0f);
+    projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f);
+    
+    //update hud
     updateNodeTransformations(hudNode, mat4(1.0), cameraTransform, projection);
-
-    // update positions of nodes (like the car)
-    plainNode->uvOffset.x += timeDelta*0.5;
-    plainNode->uvOffset.y -= timeDelta*0.5;
-    if (boxNode) boxNode->rotation.z += timeDelta;
-    lightNode[1]->rotation.z -= timeDelta;
-    lightNode[1]->position.z = 80 + 40*glm::sin(5 * lightNode[1]->rotation.z);
-    //if(carNode) carNode->rotation.z += timeDelta;
+    
+    // update spots
+    for (SceneNode* node : lightNode) {
+        if (node->nodeType == SPOT_LIGHT && node->spot_target) {
+            node->spot_direction = glm::normalize(
+                vec3(node->spot_target->MV * vec4(0,0,0,1))
+                - vec3(node->MV * vec4(0,0,0,1)));
+        }
+    }
+    
 }
-
 
 void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) {
     struct Light { // lights as stored in the shader
