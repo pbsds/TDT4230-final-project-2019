@@ -36,12 +36,13 @@ uint previousKeyFrame = 0;
 SceneNode* rootNode;
 SceneNode* plainNode;
 SceneNode* carNode;
+SceneNode* treeNode;
 SceneNode* boxNode;
 SceneNode* sphereNode;
 SceneNode* hudNode;
 SceneNode* textNode;
 
-const uint N_LIGHTS = 1;
+const uint N_LIGHTS = 2;
 SceneNode* lightNode[N_LIGHTS];
 
 // These are heap allocated, because they should not be initialised at the start of the program
@@ -134,6 +135,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     }
     
     
+    //treeNode = loadModelScene("../res/models/fur_tree/scene.gltf");
+    //treeNode->position = {300, 800, 10};
+    //rootNode->children.push_back(treeNode);
+    
     carNode = loadModelScene("../res/models/beetle/scene.gltf", {
         { 0, Material().diffuse({0.0, 0.0, 1.0}).diffuse_only().reflection_mapped(&t_reflection, 0.15)},// Blue_Metal
         { 1, Material().diffuse(vec3(0.85)).emissive(vec3(0.1)).reflection_mapped(&t_reflection, -1.0)},// Metal (decals)
@@ -189,6 +194,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     
     lightNode[0]->position = {-600, 1400, 800};
     lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0);
+    
+    lightNode[1]->position = {500, 0, 80};
+    lightNode[1]->referencePoint = {0, 500, 0};
+    lightNode[1]->scale *= 0.8;
+    lightNode[1]->light_color = vec3(0.0);
+    lightNode[1]->attenuation = vec3(1.0, 0.0, 0.000005);
     
     
     textNode = createSceneNode();

@@ -44,7 +44,7 @@ struct Light { // point lights, coordinates in MV space
     float spot_cuttof_cos;
 };
 
-#define N_LIGHTS 1
+#define N_LIGHTS 2
 uniform Light light[N_LIGHTS];
 
 
@@ -99,8 +99,6 @@ vec3 phong(vec3 basecolor) {
 
     vec3 diffuse_component  = vec3(0.0);
     vec3 specular_component = vec3(0.0);
-    float diffuse_i_sum = 0.0;
-    //vec3 emissive_component = vec3(0.0);
 
     for (int i = 0; i<N_LIGHTS; i++) {
         vec3 L = light[i].position - vertex;
@@ -127,7 +125,6 @@ vec3 phong(vec3 basecolor) {
 
         specular_component += specular_color * light[i].color * specular_i * attenuation;
         if (diffuse_i>0)  diffuse_component += diffuse_color * light[i].color * diffuse_i * attenuation;
-        //emissive_component += emissive_color*light[i].color*attenuation;
     }
 
     basecolor *= (emissive_color + diffuse_component);
