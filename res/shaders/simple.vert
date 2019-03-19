@@ -10,6 +10,7 @@ in layout(location = 5) vec3 bitangent;
 layout(binding = 0) uniform sampler2D diffuseTexture;
 layout(binding = 1) uniform sampler2D normalTexture;
 layout(binding = 2) uniform sampler2D displacementTexture;
+layout(binding = 3) uniform sampler2D reflectionTexture;
 uniform float displacementCoefficient;
 
 uniform mat4 MVP;

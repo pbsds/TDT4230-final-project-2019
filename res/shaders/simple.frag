@@ -10,6 +10,7 @@ in layout(location = 5) vec3 bitangent;
 layout(binding = 0) uniform sampler2D diffuseTexture;
 layout(binding = 1) uniform sampler2D normalTexture;
 layout(binding = 2) uniform sampler2D displacementTexture;
+layout(binding = 3) uniform sampler2D reflectionTexture;
 uniform float displacementCoefficient;
 
 uniform mat4 MVP;
@@ -19,6 +20,7 @@ uniform mat4 MVnormal;
 // material
 uniform float opacity;
 uniform float shininess;
+uniform float reflexiveness;
 uniform vec3 diffuse_color;
 uniform vec3 specular_color;
 uniform vec3 emissive_color;
@@ -28,6 +30,7 @@ uniform bool isTextured;
 uniform bool isVertexColored;
 uniform bool isNormalMapped;
 uniform bool isDisplacementMapped;
+uniform bool isReflectionMapped;
 uniform bool isInverted;
 
 // lights
@@ -47,6 +50,17 @@ uniform Light light[N_LIGHTS];
 
 out vec4 color_out;
 
+
+vec3 reflection(vec3 basecolor, vec3 nnormal) {
+    vec3 up    = normalize(vec3(MVnormal * vec4(vec3(0.0, 0.0, 1.0), 1.0)));
+    vec3 north = normalize(vec3(MVnormal * vec4(vec3(1.0, 0.0, 0.0), 1.0)));
+    float u = acos(dot(reflect(normalize(vertex), nnormal), north)) / -3.141592;
+    float v = acos(dot(reflect(normalize(vertex), nnormal), up   )) / -3.141592;
+    vec3 reflection = texture(reflectionTexture, vec2(u, v)).rgb;
+    return (reflexiveness < 0) 
+        ? basecolor * mix(vec3(0.0), reflection, -reflexiveness)
+        : mix(basecolor, reflection, reflexiveness);
+}
 
 vec3 phong(vec3 basecolor) {
     vec3 nnormal; // normalized normal
@@ -117,6 +131,10 @@ vec3 phong(vec3 basecolor) {
     }
 
     basecolor *= (emissive_color + diffuse_component);
+
+    if (isReflectionMapped)
+        basecolor = reflection(basecolor, nnormal);
+
     return basecolor + specular_component;
 }
 
@@ -126,7 +144,11 @@ void main() {
     if (isTextured)         c *= texture(diffuseTexture, UV);
     if (isInverted)         c.rgb = 1 - c.rgb;
     if (isIlluminated)      c.rgb = phong(c.rgb);
-    else                    c.rgb *= diffuse_color;
+    else{
+        c.rgb *= diffuse_color;
+        if (isReflectionMapped)
+            c.rgb = reflection(c.rgb, normalize(normal));
+    }
     //c.rgb = diffuse_color;
     //c.rgb = emissive_color;
     //c.rgb = specular_color;

@@ -57,6 +57,7 @@ struct SceneNode {
 			isTextured = false;
 			isNormalMapped = false;
 			isDisplacementMapped = false;
+			isReflectionMapped = false;
 		}
 
 		if (diffuse) {
@@ -79,8 +80,16 @@ struct SceneNode {
 			displacementTextureID = cache[displacement];
 			isDisplacementMapped  = true;
 		}
+		
+		if (reflection) {
+			if (cache.find(reflection) == cache.end())
+				cache[reflection] = generateTexture(*reflection);
+			reflectionTextureID = cache[reflection];
+			isReflectionMapped  = true;
+		}
 	}
 	void setMaterial(const Material& mat, bool recursive=false) {
+		reflexiveness = mat.reflexiveness;
 		if (!mat.ignore_diffuse)  diffuse_color  = mat.diffuse_color;
 		if (!mat.ignore_emissive) emissive_color = mat.emissive_color;
 		if (!mat.ignore_specular) specular_color = mat.specular_color;
@@ -121,6 +130,7 @@ struct SceneNode {
 	// textures and materials
 	float opacity = 1.0;
 	float shininess = 1.0; // specular power
+	float reflexiveness = 0.0; // 0 is no reflection, 1 is a mirror. Negative value will have it multiply with base instead
 	vec3 diffuse_color  = vec3(1.0);
 	vec3 emissive_color = vec3(0.5);
 	vec3 specular_color = vec3(0.2);
@@ -129,12 +139,14 @@ struct SceneNode {
 	uint normalTextureID;
 	uint displacementTextureID;
 	float displacementCoefficient = 0.1; // in units
+	uint reflectionTextureID;
 
 	// shader flags
 	bool isTextured = false;
 	bool isVertexColored = false;
 	bool isNormalMapped = false;
 	bool isDisplacementMapped = false;
+	bool isReflectionMapped = false;
 	bool isIlluminated = true;
 	bool isInverted = false;
 

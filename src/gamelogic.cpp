@@ -72,6 +72,8 @@ PNGImage t_cobble_diff   = loadPNGFile("../res/textures/cobble_diff.png");
 PNGImage t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
 PNGImage t_plain_diff    = loadPNGFile("../res/textures/plain_diff.png");
 PNGImage t_plain_normal  = loadPNGFile("../res/textures/plain_normal.png", true);
+PNGImage t_reflection    = loadPNGFile("../res/textures/reflection_field.png");
+PNGImage t_reflection2   = loadPNGFile("../res/textures/reflection_blurry.png");
 PNGImage t_perlin        = makePerlinNoisePNG(256, 256, 0.05/16);
 
 
@@ -363,6 +365,7 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader = default_shader) 
                 if (node->isTextured)           glBindTextureUnit(0, node->diffuseTextureID);
                 if (node->isNormalMapped)       glBindTextureUnit(1, node->normalTextureID);
                 if (node->isDisplacementMapped) glBindTextureUnit(2, node->displacementTextureID);
+                if (node->isReflectionMapped)   glBindTextureUnit(3, node->reflectionTextureID);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
