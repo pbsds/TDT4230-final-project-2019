@@ -216,10 +216,12 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     vector<vec3> vertices;
     vector<vec3> normals;
     vector<uint> indices;
+    vector<vec2> texcoords;
 
     vertices.reserve(3 * triangleCount);
     normals.reserve(3 * triangleCount);
     indices.reserve(3 * triangleCount);
+    texcoords.reserve(3 * triangleCount);
 
     // Slices require us to define a full revolution worth of triangles.
     // Layers only requires angle varying between the bottom and the top (a layer only covers half a circle worth of angles)
@@ -304,7 +306,14 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
             indices.emplace_back(i + 3);
             indices.emplace_back(i + 4);
             indices.emplace_back(i + 5);
-
+            
+            texcoords.emplace_back( currentSliceAngleDegrees /360., currentAngleZDegrees /180. );
+            texcoords.emplace_back(    nextSliceAngleDegrees /360., currentAngleZDegrees /180. );
+            texcoords.emplace_back(    nextSliceAngleDegrees /360.,    nextAngleZDegrees /180. );
+            texcoords.emplace_back( currentSliceAngleDegrees /360., currentAngleZDegrees /180. );
+            texcoords.emplace_back(    nextSliceAngleDegrees /360.,    nextAngleZDegrees /180. );
+            texcoords.emplace_back( currentSliceAngleDegrees /360.,    nextAngleZDegrees /180. );
+            
             i += 6;
         }
     }
@@ -313,6 +322,7 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     mesh.vertices = vertices;
     mesh.normals = normals;
     mesh.indices = indices;
+    mesh.textureCoordinates = texcoords;
     return mesh;
 }
 
