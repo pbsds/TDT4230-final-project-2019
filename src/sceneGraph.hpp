@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <utilities/glutils.h>
 #include <utilities/shader.hpp>
+#include <utilities/material.hpp>
 #include <vector>
 
 using glm::vec2;

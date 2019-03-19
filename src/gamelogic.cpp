@@ -133,22 +133,24 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     
     
     carNode = loadModelScene("../res/models/beetle/scene.gltf", {
-        {-1, Material::diffuse({0.3, 0.3, 1.0, 1.0}, 30)},// default
-        //{ 0, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Blue_Metal
-        //{ 1, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Metal
-        //{ 2, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Front_Light_Glass
-        { 3, Material::diffuse({0.2, 0.2, 0.2, 1.0})},// Black_Rubber
-        //{ 4, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Mirror
-        //{ 5, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Black_Metal
-        //{ 6, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Plastic
-        { 7, Material::diffuse({0.1, 0.1, 0.1, 1.0})},// Window_Glass
-        //{ 8, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Material
-        //{ 9, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Glossy_metal
-        //{10, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// Rogh_Metal
-        //{11, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// License_Plate_Metal
-        //{12, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// License_Plate_Frame
-        //{13, Material::diffuse({1.0, 1.0, 1.0, 1.0})},// 
+        { 0, Material().diffuse({0.0, 0.0, 1.0}).diffuse_only().reflection_mapped(&t_reflection, 0.15)},// Blue_Metal
+        { 1, Material().diffuse(vec3(0.85)).emissive(vec3(0.1)).reflection_mapped(&t_reflection, -1.0)},// Metal (decals)
+        //{ 2, Material().diffuse({1.0, 1.0, 1.0})},// Front_Light_Glass
+    //    { 3, Material().diffuse({0.2, 0.2, 0.2})},// Black_Rubber
+        { 4, Material().no_colors().reflection_mapped(&t_reflection, 1.0)},// Mirror
+        //{ 5, Material().diffuse({1.0, 1.0, 1.0})},// Black_Metal
+        //{ 6, Material().diffuse({1.0, 1.0, 1.0})},// Plastic
+//        { 7, Material().diffuse(vec3(0.2)).emissive(vec3(0.25)).specular(vec3(1.0), 70).reflection_mapped(&t_reflection, -0.8)},// Window_Glass
+        { 7, Material().diffuse(vec3(0.2)).emissive(vec3(0.25)).specular(vec3(1.0), 70).reflection_mapped(&t_reflection, -0.8)},// Window_Glass
+        //{ 8, Material().diffuse({1.0, 1.0, 1.0})},// Material
+        { 9, Material().diffuse(vec3(1.0)).emissive(vec3(0.2)).specular(vec3(0.4), 70).reflection_mapped(&t_reflection, -1.0)},// Glossy_metal
+        //{10, Material().diffuse({1.0, 1.0, 1.0})},// Rogh_Metal
+//        {11, Material().no_colors().reflection_mapped(&t_reflection, 1.0)},// License_Plate_Metal
+        {11, Material().no_colors().reflection_mapped(&t_reflection, 1.0)},// License_Plate_Metal
+        //{12, Material().diffuse({1.0, 1.0, 1.0})},// License_Plate_Frame
+        //{13, Material().diffuse({1.0, 1.0, 1.0})},// 
         });
+    //carNode->setMaterial(Material().reflection_mapped(&t_reflection, 0.0).no_colors().no_texture_reset(), true);
     carNode->position = {500, 500, 100};
     carNode->scale *= 100;
     rootNode->children.push_back(carNode);
@@ -293,6 +295,8 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     plainNode->uvOffset.y -= timeDelta*0.5;
     if (boxNode) boxNode->rotation.z += timeDelta;
     lightNode[1]->rotation.z -= timeDelta;
+    lightNode[1]->position.z = 80 + 40*glm::sin(5 * lightNode[1]->rotation.z);
+    //if(carNode) carNode->rotation.z += timeDelta;
 }
 
 

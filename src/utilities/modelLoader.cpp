@@ -52,10 +52,7 @@ SceneNode* buildSceneNodes(
 		out->children.push_back(mesh_node);
 		uint meshidx = node->mMeshes[i];
 		
-		mesh_node->basecolor = mat_lookup[meshidx]->basecolor;
-		mesh_node->shininess = mat_lookup[meshidx]->shininess;
-		
-//		mesh_node.setTexture(&meshes[node->mMeshes[i]]);
+		mesh_node->setMaterial(*mat_lookup[meshidx]);
 		mesh_node->setMesh(&meshes[meshidx]);
 		
 	}
@@ -85,7 +82,7 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 	
 	// read materials
 	uint j=0;
-	Material default_material = Material::diffuse({1, 1, 1, 1});
+	Material default_material = Material().diffuse({1, 1, 1});
 	vector<Material> materials(scene->mNumMaterials);
 	for (Material& material : materials) {
 		const aiMaterial* aimat = scene->mMaterials[j++];
@@ -98,21 +95,30 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 			cout << "   " << aimat->mProperties[i]->mKey.C_Str() << endl;
 		}
 		
-		aiColor4D diffuse (1,1,1,1);
-		aimat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
-		//aiGetMaterialColor(aimat, "$mat.gltf.pbrMetallicRoughness.baseColorFactor", 0, 0, &diffuse);
-		//aiGetMaterialColor(aimat, "$mat.gltf.pbrMetallicRoughness.metallicFactor", 0, 0, &diffuse);
-		//aiGetMaterialColor(aimat, "$mat.gltf.pbrMetallicRoughness.roughnessFactor", 0, 0, &diffuse);
-		material.basecolor = {diffuse.r, diffuse.g, diffuse.b, diffuse.a};
+		aiColor3D color (1,1,1);
+		aiColor4D color4 (1,1,1,0);
+		if (AI_SUCCESS == aimat->Get(AI_MATKEY_COLOR_DIFFUSE, color))
+			material.diffuse_color = {color.r, color.g, color.b};
+		if (AI_SUCCESS == aimat->Get(AI_MATKEY_COLOR_EMISSIVE, color))
+			material.emissive_color = {color.r, color.g, color.b};
+		if (AI_SUCCESS == aimat->Get(AI_MATKEY_COLOR_SPECULAR, color))
+			material.specular_color = {color.r, color.g, color.b};
+		//if (AI_SUCCESS == aiGetMaterialColor(aimat, "$mat.gltf.pbrMetallicRoughness.baseColorFactor", 0, 0, &color4))
+		//	material.diffuse_color = {color4.r, color4.g, color4.b};
+		//if (AI_SUCCESS == aiGetMaterialColor(aimat, "$mat.gltf.pbrMetallicRoughness.metallicFactor", 0, 0, &color4))
+		//	material.emissive_color *= vec3{color4.r, color4.g, color4.b};
+		//if (AI_SUCCESS == aiGetMaterialColor(aimat, "$mat.gltf.pbrMetallicRoughness.roughnessFactor", 0, 0, &color4))
+		//	material.specular_color = {color4.r, color4.g, color4.b};
 		
 		aimat->Get(AI_MATKEY_SHININESS, material.shininess);
 	}
 	
-	for (auto override : overrides)
-		((override.first>=0) 
+	for (auto override : overrides) {
+		Material& mat = (override.first>=0) 
 			? materials[override.first] 
-			: default_material
-		) = override.second;
+			: default_material;
+		mat = mat.apply(override.second);
+	}
 	
 	vector<Mesh>     meshes(  scene->mNumMeshes);
 	vector<PNGImage> textures(scene->mNumTextures);
@@ -135,7 +141,7 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 			});
 		}
 
-		mat_lookup[j-1] = (aimesh->mMaterialIndex)
+		mat_lookup[j-1] = (aimesh->mMaterialIndex < meshes.size())
 			? &materials[aimesh->mMaterialIndex]
 			: &default_material;
 		
