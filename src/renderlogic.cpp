@@ -1,4 +1,4 @@
-#include "gamelogic.hpp"
+#include "renderlogic.hpp"
 #include "sceneGraph.hpp"
 #include <GLFW/glfw3.h>
 #include <SFML/Audio/Sound.hpp>

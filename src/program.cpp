@@ -1,7 +1,7 @@
 // Local headers
 #include "program.hpp"
 #include "utilities/window.hpp"
-#include "gamelogic.hpp"
+#include "renderlogic.hpp"
 #include <glm/glm.hpp>
 // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/matrix_transform.hpp>

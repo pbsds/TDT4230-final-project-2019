@@ -1,5 +1,5 @@
 #include "scene.hpp"
-#include "gamelogic.hpp"
+#include "renderlogic.hpp"
 #include "sceneGraph.hpp"
 #include <GLFW/glfw3.h>
 #include <chrono>
