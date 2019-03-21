@@ -155,15 +155,18 @@ void init_scene(CommandLineOptions options) {
     hudNode->children.push_back(textNode);
 }
 
-void mouse_position_cb(double x, double y, int winw, int winh) {
-    float mousePositionX = x / double(winw); // like the hudNode space
-    float mousePositionY = y / double(winh);
+// returns true if mouse should be centered and invisible
+bool mouse_position_handler(double mx, double my, int scale) {
+    //cout << mx << "\t" << my << endl;
     
+    return false;
 }
 
 void step_scene(double timeDelta) {
     static double timeAcc = 0; // shrug
     timeAcc += timeDelta;
+    
+    cout << "td: " << timeDelta << " " << 1/timeDelta << endl;
     
     plainNode->uvOffset.x += timeDelta*0.5;
     plainNode->uvOffset.y -= timeDelta*0.5;

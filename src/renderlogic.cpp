@@ -22,29 +22,25 @@ typedef unsigned int uint;
 sf::Sound* sound;
 sf::SoundBuffer* buffer;
 
-void mouseCallback(GLFWwindow* window, double x, double y) {
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
-    glViewport(0, 0, windowWidth, windowHeight);
+void mouse_callback(GLFWwindow* window, double x, double y) {
+    static bool mouse_mode = false; 
+    int winw, winh;
+    glfwGetWindowSize(window, &winw, &winh);
+    glViewport(0, 0, winw, winh);
+
+    double mx = (x - winw/2) / double(winh) * 2; // winh instead of winw, like the hudNode space
+    double my = (winh/2 - y) / double(winh) * 2;
     
-    mouse_position_cb(x, y, windowWidth, windowHeight);
+    bool reset_mouse = mouse_position_handler(mx, my, winh/2);
     
-    /*
-    if(padPositionX > 1) {
-        padPositionX = 1;
-        glfwSetCursorPos(window, windowWidth, y);
-    } else if(padPositionX < 0) {
-        padPositionX = 0;
-        glfwSetCursorPos(window, 0, y);
+    if (reset_mouse)
+        glfwSetCursorPos(window, winw/2, winh/2);
+    if (reset_mouse != mouse_mode) {
+        mouse_mode = reset_mouse;
+        glfwSetInputMode(window, GLFW_CURSOR, (reset_mouse)
+            ? GLFW_CURSOR_DISABLED
+            : GLFW_CURSOR_NORMAL);
     }
-    if(padPositionY > 1) {
-        padPositionY = 1;
-        glfwSetCursorPos(window, x, windowHeight);
-    } else if(padPositionY < 0) {
-        padPositionY = 0;
-        glfwSetCursorPos(window, x, 0);
-    }
-    */
 }
 
 void initRenderer(GLFWwindow* window, CommandLineOptions options) {
@@ -53,8 +49,7 @@ void initRenderer(GLFWwindow* window, CommandLineOptions options) {
         return;
     }
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetCursorPosCallback(window, mouse_callback);
     
     init_scene(options);
     
@@ -85,7 +80,6 @@ void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4
 
 // step
 void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     double timeDelta = getTimeDeltaSeconds();
     float aspect = float(windowWidth) / float(windowHeight);
     

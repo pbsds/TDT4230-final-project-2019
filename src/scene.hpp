@@ -14,5 +14,9 @@ extern glm::vec3 cameraLookAt;
 extern glm::vec3 cameraUpward;
 
 void init_scene(CommandLineOptions options);
-void mouse_position_cb(double x, double y, int winw, int winh);
+
+// same coords as hudNode, returns true if mouse should be disabled and centered.
+// `scale` is window_height/2 
+bool mouse_position_handler(double mx, double my, int scale);
+
 void step_scene(double timeDelta);
