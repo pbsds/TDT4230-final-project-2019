@@ -42,6 +42,8 @@ struct SceneNode {
 				const PNGImage* reflection=nullptr,
 				bool texture_reset=true);
 	void setMaterial(const Material& mat, bool recursive=false);
+	bool has_transparancy() const;
+	SceneNode* clone() const;
 	
 	// this node
 	SceneNodeType nodeType;
@@ -57,7 +59,7 @@ struct SceneNode {
 
 	// The node's position and rotation relative to its parent
 	vec3 position = vec3(0, 0, 0);
-	vec3 rotation = vec3(0, 0, 0); // also used as spot-target
+	vec3 rotation = vec3(0, 0, 0);
 	vec3 scale    = vec3(1, 1, 1);
 	vec3 referencePoint = vec3(0, 0, 0); // center of rotation, in model space
 
@@ -78,7 +80,11 @@ struct SceneNode {
 	uint displacementTextureID;
 	float displacementCoefficient = 0.1; // in units
 	uint reflectionTextureID;
-
+	
+	// has_transparancy
+	const Mesh* m_gemoetry = nullptr;
+	const PNGImage* t_diffuse = nullptr;
+	
 	// shader flags
 	bool isTextured = false;
 	bool isVertexColored = false;

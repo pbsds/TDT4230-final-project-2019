@@ -5,6 +5,7 @@
 #include <chrono>
 #include <glad/glad.h>
 #include <iostream>
+#include <cstdlib>
 #include <utilities/imageLoader.hpp>
 #include <utilities/modelLoader.hpp>
 #include <utilities/mesh.h>
@@ -73,11 +74,31 @@ void init_scene(CommandLineOptions options) {
         rootNode->children.push_back(lightNode[i]);
     }
     
-    //treeNode = loadModelScene("../res/models/fur_tree/scene.gltf");
+    //treeNode = loadModelScene("../res/models/fur_tree", "scene.gltf");
     //treeNode->position = {300, 800, 10};
     //rootNode->children.push_back(treeNode);
     
-    carNode = loadModelScene("../res/models/beetle/scene.gltf", {
+    //uint i = 30;
+    //while (i--) {
+    //    SceneNode* asd = treeNode->clone();
+    //    asd->position.x = (std::rand() % 10000) / 10;
+    //    asd->position.y = (std::rand() % 10000) / 10;
+    //    rootNode->children.push_back(asd);
+    //}
+    
+    grassNode = loadModelScene("../res/models/single_grass", "scene.gltf");
+    grassNode->position = {400, 400, 15};
+    rootNode->children.push_back(grassNode);
+    for (uint i = 100; i--;) {
+        SceneNode* asd = grassNode->clone();
+        asd->position.x = (std::rand() % 10000) / 10;
+        asd->position.y = (std::rand() % 10000) / 10;
+        rootNode->children.push_back(asd);
+    }
+    
+    
+    /*
+    carNode = loadModelScene("../res/models/beetle", "scene.gltf", {
         { 0, Material().diffuse({0.0, 0.0, 1.0}).diffuse_only().reflection_mapped(&t_reflection, 0.15)},// Blue_Metal
         { 1, Material().diffuse(vec3(0.85)).emissive(vec3(0.1)).reflection_mapped(&t_reflection, -1.0)},// Metal (decals)
         //{ 2, Material().diffuse({1.0, 1.0, 1.0})},// Front_Light_Glass
@@ -85,20 +106,18 @@ void init_scene(CommandLineOptions options) {
         { 4, Material().no_colors().reflection_mapped(&t_reflection, 1.0)},// Mirror
         //{ 5, Material().diffuse({1.0, 1.0, 1.0})},// Black_Metal
         //{ 6, Material().diffuse({1.0, 1.0, 1.0})},// Plastic
-//        { 7, Material().diffuse(vec3(0.2)).emissive(vec3(0.25)).specular(vec3(1.0), 70).reflection_mapped(&t_reflection, -0.8)},// Window_Glass
         { 7, Material().diffuse(vec3(0.2)).emissive(vec3(0.25)).specular(vec3(1.0), 70).reflection_mapped(&t_reflection, -0.8)},// Window_Glass
         //{ 8, Material().diffuse({1.0, 1.0, 1.0})},// Material
         { 9, Material().diffuse(vec3(1.0)).emissive(vec3(0.2)).specular(vec3(0.4), 70).reflection_mapped(&t_reflection, -1.0)},// Glossy_metal
         //{10, Material().diffuse({1.0, 1.0, 1.0})},// Rogh_Metal
-//        {11, Material().no_colors().reflection_mapped(&t_reflection, 1.0)},// License_Plate_Metal
         {11, Material().no_colors().reflection_mapped(&t_reflection, 1.0)},// License_Plate_Metal
         //{12, Material().diffuse({1.0, 1.0, 1.0})},// License_Plate_Frame
         //{13, Material().diffuse({1.0, 1.0, 1.0})},// 
         });
-    //carNode->setMaterial(Material().reflection_mapped(&t_reflection, 0.0).no_colors().no_texture_reset(), true);
     carNode->position = {500, 500, 100};
     carNode->scale *= 100;
     rootNode->children.push_back(carNode);
+    */
     
     //create the scene:
     plainNode = createSceneNode();

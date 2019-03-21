@@ -10,6 +10,7 @@ struct PNGImage {
 	uint width, height;
 	bool repeat_mirrored = false;
 	std::vector<unsigned char> pixels; // RGBA
+	bool has_transparancy = false;
 };
 
 PNGImage loadPNGFile(std::string filename, bool flip_handedness=false);

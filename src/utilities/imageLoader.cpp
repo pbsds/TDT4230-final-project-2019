@@ -58,7 +58,14 @@ PNGImage loadPNGFile(string filename, bool flip_handedness) {
 	image.width = width;
 	image.height = height;
 	image.pixels = pixels;
-
+	
+	for (uint i = 3; i < pixels.size(); i+=4) {
+		if (pixels[i] < 255) {
+			image.has_transparancy = true;
+			break;
+		}
+	}
+	
 	return image;
 }
 

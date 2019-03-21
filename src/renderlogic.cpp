@@ -10,6 +10,7 @@
 #include <glm/vec3.hpp>
 #include <iostream>
 #include <string>
+#include <algorithm>
 #include <utilities/glfont.h>
 #include <utilities/shader.hpp>
 #include <utilities/timeutils.h>
@@ -119,7 +120,14 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
 }
 
 // traverses and renders one and one node
-void renderNode(SceneNode* node, Gloom::Shader* parent_shader) {
+struct NodeDistShader{
+    SceneNode* node;
+    Gloom::Shader* s;
+    float dist;
+    NodeDistShader(SceneNode* node, Gloom::Shader* s, float dist)
+        : node(node), s(s), dist(dist) {}
+};
+void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistShader>* transparent_nodes=nullptr, bool do_recursive=true) {
     struct Light { // lights as stored in the shader
         // coordinates in MV space
         vec3  position; // MV
@@ -158,7 +166,11 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader) {
     
     switch(node->nodeType) {
         case GEOMETRY:
-            if(node->vertexArrayObjectID != -1) {
+            if (transparent_nodes!=nullptr && node->has_transparancy()) {
+                // defer to sorted pass later on
+                transparent_nodes->emplace_back(node, node_shader, (float)glm::length(vec3(node->MVP*vec4(0,0,0,1))));
+            }
+            else if(node->vertexArrayObjectID != -1) {
                 // load uniforms
                 glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
                 glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
@@ -203,16 +215,37 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader) {
             break;
     }
 
+    if (do_recursive)
     for(SceneNode* child : node->children) {
-        renderNode(child, node_shader);
+        renderNode(child, node_shader, transparent_nodes, true);
     }
 }
 
 // draw
 void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     glViewport(0, 0, windowWidth, windowHeight);
-
+    
+    static vector<NodeDistShader> transparent_nodes;
+    transparent_nodes.clear();
+    
     // externs from scene.hpp, they must have shaders set
-    renderNode(rootNode, nullptr);
+    renderNode(rootNode, nullptr, &transparent_nodes);
+    
+    // sort and render transparent node, sorted by distance from camera
+    std::sort(
+        transparent_nodes.begin(),
+        transparent_nodes.end(),
+        [](NodeDistShader a, NodeDistShader b) {
+            return a.dist > b.dist;
+    });
+    glDepthMask(GL_FALSE);
+    //glDisable(GL_DEPTH_TEST);
+    for (NodeDistShader a : transparent_nodes)
+        renderNode(a.node, a.s, nullptr, false);
+    std::cout << transparent_nodes.size() << std::endl;
+    glDepthMask(GL_TRUE); 
+    //glEnable(GL_DEPTH_TEST);
+    
+    
     renderNode(hudNode, nullptr);
 }

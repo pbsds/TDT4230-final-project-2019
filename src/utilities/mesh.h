@@ -10,4 +10,6 @@ struct Mesh {
     std::vector<glm::vec4> colors;
 
     std::vector<unsigned int> indices;
+    
+    bool has_transparancy = false; // if any of the colors are transparent
 };
