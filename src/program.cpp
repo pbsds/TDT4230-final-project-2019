@@ -1,7 +1,7 @@
 // Local headers
 #include "program.hpp"
 #include "utilities/window.hpp"
-#include "gamelogic.h"
+#include "gamelogic.hpp"
 #include <glm/glm.hpp>
 // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/matrix_transform.hpp>
@@ -31,7 +31,7 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     // Set default colour after clearing the colour buffer
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
 
-	initGame(window, options);
+	initRenderer(window, options);
 
     // Rendering Loop
     while (!glfwWindowShouldClose(window))
