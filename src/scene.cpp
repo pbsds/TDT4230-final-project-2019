@@ -193,6 +193,7 @@ void step_scene(double timeDelta) {
     lightNode[1]->rotation.z -= timeDelta;
     //lightNode[1]->position.z = 80 + 40*glm::sin(5 * lightNode[1]->rotation.z);
     if(carNode) carNode->rotation.z += timeDelta;
+    if(treeNode) treeNode->rotation.z += timeDelta;
 
     /*
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
