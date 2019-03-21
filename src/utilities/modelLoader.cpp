@@ -25,15 +25,14 @@ using std::endl;
 SceneNode* buildSceneNodes(
 		const aiNode* node,
 		const vector<Mesh>& meshes,
-		const vector<PNGImage>& textures,
 		const vector<Material*>& mat_lookup) {
-	if (DEBUG) cout << "Building node from " << node->mName.C_Str() << "..." << endl;
+	if (DEBUG) cout << "Building node from " << node->mName.data << "..." << endl;
 	
 	// filter semantic-only nodes
 	if (node->mTransformation.IsIdentity()
 			&& node->mNumMeshes == 0
 			&& node->mNumChildren == 1)
-		return buildSceneNodes(node->mChildren[0], meshes, textures, mat_lookup);
+		return buildSceneNodes(node->mChildren[0], meshes, mat_lookup);
 	
 	SceneNode* out = createSceneNode();
 
@@ -58,15 +57,15 @@ SceneNode* buildSceneNodes(
 	}
 
 	for (uint i=0; i<node->mNumChildren; i++)
-		out->children.push_back(buildSceneNodes(node->mChildren[i], meshes, textures, mat_lookup));
+		out->children.push_back(buildSceneNodes(node->mChildren[i], meshes, mat_lookup));
 	
 	return out;
 }
 
-SceneNode* loadModelScene(const std::string& filename, const map<int, Material>& overrides) {
+SceneNode* loadModelScene(const std::string& dirname, const std::string& filename, const map<int, Material>& overrides) {
 	Assimp::Importer importer;
 
-	const aiScene* scene = importer.ReadFile(filename,
+	const aiScene* scene = importer.ReadFile(dirname + "/" + filename,
 		aiProcess_CalcTangentSpace
 		//| aiProcess_FlipWindingOrder
 		| aiProcess_Triangulate
@@ -82,7 +81,7 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 	
 	// read materials
 	uint j=0;
-	Material default_material = Material().diffuse({1, 1, 1});
+	Material default_material;
 	vector<Material> materials(scene->mNumMaterials);
 	for (Material& material : materials) {
 		const aiMaterial* aimat = scene->mMaterials[j++];
@@ -90,9 +89,9 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 		// print material
 		aiString name; aimat->Get(AI_MATKEY_NAME, name);
 		if (DEBUG){
-			cout << "Read material #" << j-1 << " '" << name.C_Str() << "':" << endl;
+			cout << "Read material #" << j-1 << " '" << name.data << "':" << endl;
 			for (uint i=0; i < aimat->mNumProperties; i++)
-			cout << "   " << aimat->mProperties[i]->mKey.C_Str() << endl;
+			cout << "   " << aimat->mProperties[i]->mKey.data << endl;
 		}
 		
 		aiColor3D color (1,1,1);
@@ -111,8 +110,32 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 		//	material.specular_color = {color4.r, color4.g, color4.b};
 		
 		aimat->Get(AI_MATKEY_SHININESS, material.shininess);
+		//todo: opacity?
+		
+		if (aimat->GetTextureCount(aiTextureType_DIFFUSE)) {
+			aiString path; aimat->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+			if (DEBUG) cout << "  diffuse texture path: " << dirname << "/" << path.data << endl;
+			material.diffuse_texture = loadPNGFileDynamic(dirname + "/" + path.data);
+		}
+		if (aimat->GetTextureCount(aiTextureType_NORMALS)) {
+			aiString path; aimat->GetTexture(aiTextureType_NORMALS, 0, &path);
+			if (DEBUG) cout << "  normal texture path: " << dirname << "/" << path.data << endl;
+			material.normal_texture = loadPNGFileDynamic(dirname + "/" + path.data);
+		}
+		if (aimat->GetTextureCount(aiTextureType_DISPLACEMENT)) {
+			aiString path; aimat->GetTexture(aiTextureType_DISPLACEMENT, 0, &path);
+			if (DEBUG) cout << "  displacement texture path: " << dirname << "/" << path.data << endl;
+			material.displacement_texture = loadPNGFileDynamic(dirname + "/" + path.data);
+		}
+		if (aimat->GetTextureCount(aiTextureType_REFLECTION)) {
+			aiString path; aimat->GetTexture(aiTextureType_REFLECTION, 0, &path);
+			if (DEBUG) cout << "  displacement texture path: " << dirname << "/" << path.data << endl;
+			material.reflection_texture = loadPNGFileDynamic(dirname + "/" + path.data);
+		}
+		
 	}
 	
+	// apply material overriders to material list
 	for (auto override : overrides) {
 		Material& mat = (override.first>=0) 
 			? materials[override.first] 
@@ -121,7 +144,6 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 	}
 	
 	vector<Mesh>     meshes(  scene->mNumMeshes);
-	vector<PNGImage> textures(scene->mNumTextures);
 	vector<Material*> mat_lookup(scene->mNumMeshes); // to be passed to buildSceneNodes
 
 	// read meshes
@@ -174,13 +196,8 @@ SceneNode* loadModelScene(const std::string& filename, const map<int, Material>&
 		}
 	}
 	
-	// read textures
-	j=0;
-	for (PNGImage& texture : textures) {
-		const aiTexture* aitex = scene->mTextures[j++];
-		// todo
-	}
-	SceneNode* out = buildSceneNodes(scene->mRootNode, meshes, textures, mat_lookup);
+	// build scene node tree:
+	SceneNode* out = buildSceneNodes(scene->mRootNode, meshes, mat_lookup);
 	out->rotation.x += M_PI/2; // account for my weird coordinates. Z is upward damnit!
 	return out;
 }

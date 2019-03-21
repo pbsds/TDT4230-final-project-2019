@@ -12,7 +12,10 @@ struct PNGImage {
 	std::vector<unsigned char> pixels; // RGBA
 };
 
-PNGImage loadPNGFile(std::string fileName, bool flip_handedness=false);
+PNGImage loadPNGFile(std::string filename, bool flip_handedness=false);
+
+PNGImage* loadPNGFileDynamic(std::string filename, bool flip_handedness=false);
+PNGImage* loadPNGFileDynamicNoCaching(std::string filename, bool flip_handedness=false);
 
 PNGImage makePerlinNoisePNG(uint w, uint h, float scale=0.1);
 

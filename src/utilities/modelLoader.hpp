@@ -8,5 +8,6 @@
 #define DEBUG false
 
 SceneNode* loadModelScene(
-	const std::string& filename,
+	const std::string& dirname,
+	const std::string& filename, //basename
 	const std::map<int, Material>& overrides={});

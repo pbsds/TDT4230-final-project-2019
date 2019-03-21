@@ -2,19 +2,24 @@
 #include <glm/vec2.hpp>
 #include <glm/gtc/noise.hpp>
 #include <iostream>
+#include <vector>
+#include <map>
+#include <string>
 
 using glm::vec2;
+using std::string;
+using std::map;
 using std::vector;
 typedef unsigned int uint;
 
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
-PNGImage loadPNGFile(std::string fileName, bool flip_handedness) {
+PNGImage loadPNGFile(string filename, bool flip_handedness) {
 	vector<unsigned char> png;
 	vector<unsigned char> pixels; //the raw pixels
 	uint width, height;
 
 	//load and decode
-	uint error = lodepng::load_file(png, fileName);
+	uint error = lodepng::load_file(png, filename);
 	if(!error) error = lodepng::decode(pixels, width, height, png);
 
 	//if there's an error, display it
@@ -57,6 +62,17 @@ PNGImage loadPNGFile(std::string fileName, bool flip_handedness) {
 	return image;
 }
 
+PNGImage* loadPNGFileDynamic(string filename, bool flip_handedness) {
+	static map<string, PNGImage*> cache{};
+	if (cache.find(filename) == cache.end())
+		cache[filename] = loadPNGFileDynamicNoCaching(filename, flip_handedness);
+	return cache[filename];
+}
+PNGImage* loadPNGFileDynamicNoCaching(string filename, bool flip_handedness) {
+	PNGImage* out = new PNGImage;
+	*out = loadPNGFile(filename, flip_handedness);
+	return out;
+}
 
 PNGImage makePerlinNoisePNG(uint w, uint h, float scale) {
 	return makePerlinNoisePNG(w, h, vector<float>{scale});
