@@ -20,6 +20,9 @@ else()
   endif()
 endif()
 
+# rtags setup
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 #
 # GLFW options
 #
