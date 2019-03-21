@@ -42,6 +42,7 @@ struct SceneNode {
 				const PNGImage* reflection=nullptr,
 				bool texture_reset=true);
 	void setMaterial(const Material& mat, bool recursive=false);
+	bool has_no_transforms() const;
 	bool has_transparancy() const;
 	SceneNode* clone() const;
 	

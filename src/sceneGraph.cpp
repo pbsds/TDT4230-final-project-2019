@@ -77,6 +77,12 @@ void SceneNode::setMaterial(const Material& mat, bool recursive) {
 		child->setMaterial(mat, true);
 }
 
+bool SceneNode::has_no_transforms() const {
+	return position.x == 0 && position.y == 0 && position.z == 0
+		&& rotation.x == 0 && rotation.y == 0 && rotation.z == 0
+		&& scale.x    == 1 && scale.y    == 1 && scale.z    == 1;
+}
+
 bool SceneNode::has_transparancy() const {
 	return opacity < 1.0
 		|| t_diffuse && t_diffuse->has_transparancy

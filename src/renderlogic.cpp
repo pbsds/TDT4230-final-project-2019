@@ -60,16 +60,16 @@ void initRenderer(GLFWwindow* window, CommandLineOptions options) {
 
 // traverses and updates matricies
 void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4 const& V, mat4 const& P) {
-    mat4 transformationMatrix
-        = glm::translate(mat4(1.0), node->position)
+    mat4 M = (node->has_no_transforms())
+        ? transformationThusFar
+        : transformationThusFar
+        * glm::translate(mat4(1.0), node->position)
         * glm::translate(mat4(1.0), node->referencePoint)
         * glm::rotate(mat4(1.0), node->rotation.z, vec3(0,0,1))
         * glm::rotate(mat4(1.0), node->rotation.y, vec3(0,1,0))
         * glm::rotate(mat4(1.0), node->rotation.x, vec3(1,0,0))
         * glm::scale(mat4(1.0), node->scale)
         * glm::translate(mat4(1.0), -node->referencePoint);
-
-    mat4 M = transformationThusFar * transformationMatrix;
 
     node->MV = V*M;
     node->MVP = P*node->MV;
