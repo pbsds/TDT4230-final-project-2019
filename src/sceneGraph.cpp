@@ -14,7 +14,7 @@ void SceneNode::setMesh(const Mesh* mesh) {
 	vertexArrayObjectID = cache[mesh];
 	VAOIndexCount = mesh->indices.size();
 	isVertexColored = ! mesh->colors.empty();
-	m_gemoetry = mesh;
+	mesh_has_transparancy = mesh->has_transparancy;
 }
 void SceneNode::setTexture(
 		const PNGImage* diffuse,
@@ -28,7 +28,7 @@ void SceneNode::setTexture(
 		isNormalMapped = false;
 		isDisplacementMapped = false;
 		isReflectionMapped = false;
-		t_diffuse = nullptr;
+		tex_has_transparancy = false;
 	}
 
 	if (diffuse) {
@@ -36,7 +36,7 @@ void SceneNode::setTexture(
 			cache[diffuse] = generateTexture(*diffuse);
 		diffuseTextureID = cache[diffuse];
 		isTextured = true;
-		t_diffuse = diffuse;
+		tex_has_transparancy = diffuse->has_transparancy;
 	}
 	
 	if (normal) {
@@ -84,9 +84,9 @@ bool SceneNode::has_no_transforms() const {
 }
 
 bool SceneNode::has_transparancy() const {
-	return opacity < 1.0
-		|| t_diffuse && t_diffuse->has_transparancy
-		|| m_gemoetry && m_gemoetry->has_transparancy;
+	return mesh_has_transparancy
+		|| tex_has_transparancy
+		|| opacity < 0.98;
 }
 
 SceneNode* SceneNode::clone() const {

@@ -82,9 +82,9 @@ struct SceneNode {
 	float displacementCoefficient = 0.1; // in units
 	uint reflectionTextureID;
 	
-	// has_transparancy
-	const Mesh* m_gemoetry = nullptr;
-	const PNGImage* t_diffuse = nullptr;
+	// has_transparancy check
+	bool mesh_has_transparancy = false;
+	bool tex_has_transparancy = false;
 	
 	// shader flags
 	bool isTextured = false;

@@ -175,7 +175,8 @@ SceneNode* loadModelScene(const std::string& dirname, const std::string& filenam
 				aimesh->mTextureCoords[0][i].y,
 			});
 		}
-
+		
+		mesh.has_transparancy = false;
 		if (aimesh->GetNumColorChannels() >= 1)
 		for (uint i=0;  i < aimesh->mNumVertices; i++){
 			mesh.colors.push_back({
@@ -184,6 +185,8 @@ SceneNode* loadModelScene(const std::string& dirname, const std::string& filenam
 				aimesh->mColors[0][i].b,
 				aimesh->mColors[0][i].a,
 			});
+			if (aimesh->mColors[0][i].a < 255)
+				mesh.has_transparancy = true;
 		}
 		
 		for (uint i=0;  i < aimesh->mNumFaces; i++){
