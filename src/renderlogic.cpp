@@ -153,6 +153,7 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
     };
     static Light lights[N_LIGHTS];
     static Gloom::Shader* s = nullptr; // The currently active shader
+    static Gloom::Shader* prev_s = nullptr; // The last shader to glDrawElements
     
     // activate the correct shader
     Gloom::Shader* node_shader = (node->shader != nullptr)
@@ -164,39 +165,49 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
         uint i = 0; for (Light l : lights) l.push_to_shader(s, i++);
     }
     
+    bool shader_changed = s == prev_s;
+    #define cache(x) static decltype(node->x) cached_ ## x; if (shader_changed && cached_ ## x != node->x) { cached_ ## x = node->x;
+    #define um4fv(x) cache(x) glUniformMatrix4fv(s->location(#x), 1, GL_FALSE, glm::value_ptr(node->x)); }
+    #define u2fv(x)  cache(x) glUniform2fv( s->location(#x), 1, glm::value_ptr(node->x)); }
+    #define u3fv(x)  cache(x) glUniform3fv( s->location(#x), 1, glm::value_ptr(node->x)); }
+    #define u1f(x)   cache(x) glUniform1f(  s->location(#x), node->x); }
+    #define u1ui(x)  cache(x) glUniform1ui( s->location(#x), node->x); }
+    #define ubtu(n,i,x) if(node->i) { cache(x) glBindTextureUnit(n, node->x); } }
+    
     switch(node->nodeType) {
         case GEOMETRY:
             if (transparent_nodes!=nullptr && node->has_transparancy()) {
                 // defer to sorted pass later on
-                transparent_nodes->emplace_back(node, node_shader, (float)glm::length(vec3(node->MVP*vec4(0,0,0,1))));
+                //transparent_nodes->emplace_back(node, node_shader, glm::length(vec3(node->MVP[3])));
+                //transparent_nodes->push_back({node, node_shader, glm::length(vec3(node->MVP[3]))});
+                transparent_nodes->emplace_back(node, node_shader, glm::length(vec3(node->MVP*vec4(0,0,0,1))));
+                //transparent_nodes->push_back({node, node_shader, glm::length(vec3(node->MVP*vec4(0,0,0,1)))});
             }
             else if(node->vertexArrayObjectID != -1) {
                 // load uniforms
-                glUniformMatrix4fv(s->location("MVP")     , 1, GL_FALSE, glm::value_ptr(node->MVP));
-                glUniformMatrix4fv(s->location("MV")      , 1, GL_FALSE, glm::value_ptr(node->MV));
-                glUniformMatrix4fv(s->location("MVnormal"), 1, GL_FALSE, glm::value_ptr(node->MVnormal));
-                glUniform2fv(s->location("uvOffset")      , 1,           glm::value_ptr(node->uvOffset));
-                glUniform3fv(s->location("diffuse_color") , 1,           glm::value_ptr(node->diffuse_color));
-                glUniform3fv(s->location("emissive_color"), 1,           glm::value_ptr(node->emissive_color));
-                glUniform3fv(s->location("specular_color"), 1,           glm::value_ptr(node->specular_color));
-                glUniform1f( s->location("opacity"),                 node->opacity);
-                glUniform1f( s->location("shininess"),               node->shininess);
-                glUniform1f( s->location("reflexiveness"),           node->reflexiveness);
-                glUniform1f( s->location("displacementCoefficient"), node->displacementCoefficient);
-                glUniform1ui(s->location("isTextured"),              node->isTextured);
-                glUniform1ui(s->location("isVertexColored"),         node->isVertexColored);
-                glUniform1ui(s->location("isNormalMapped"),          node->isNormalMapped);
-                glUniform1ui(s->location("isDisplacementMapped"),    node->isDisplacementMapped);
-                glUniform1ui(s->location("isReflectionMapped"),      node->isReflectionMapped);
-                glUniform1ui(s->location("isIlluminated"),           node->isIlluminated);
-                glUniform1ui(s->location("isInverted"),              node->isInverted);
-                
-                if (node->isTextured)           glBindTextureUnit(0, node->diffuseTextureID);
-                if (node->isNormalMapped)       glBindTextureUnit(1, node->normalTextureID);
-                if (node->isDisplacementMapped) glBindTextureUnit(2, node->displacementTextureID);
-                if (node->isReflectionMapped)   glBindTextureUnit(3, node->reflectionTextureID);
+                um4fv(MVP); um4fv(MV); um4fv(MVnormal);
+                u2fv (uvOffset);
+                u3fv (diffuse_color);
+                u3fv (emissive_color);
+                u3fv (specular_color);
+                u1f  (opacity);
+                u1f  (shininess);
+                u1f  (reflexiveness);
+                u1f  (displacementCoefficient);
+                u1ui (isTextured);
+                u1ui (isVertexColored);
+                u1ui (isNormalMapped);
+                u1ui (isDisplacementMapped);
+                u1ui (isReflectionMapped);
+                u1ui (isIlluminated);
+                u1ui (isInverted);
+                ubtu(0, isTextured          , diffuseTextureID);
+                ubtu(1, isNormalMapped      , normalTextureID);
+                ubtu(2, isDisplacementMapped, displacementTextureID);
+                ubtu(3, isReflectionMapped  , reflectionTextureID);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+                prev_s = s;
             }
             break;
         case SPOT_LIGHT:
@@ -214,6 +225,14 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
         default:
             break;
     }
+
+    #undef um4fv
+    #undef u2fv
+    #undef u3fv
+    #undef u1f
+    #undef u1ui
+    #undef ubtu
+    #undef cache
 
     if (do_recursive)
     for(SceneNode* child : node->children) {
@@ -238,12 +257,12 @@ void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
         [](NodeDistShader a, NodeDistShader b) {
             return a.dist > b.dist;
     });
-    glDepthMask(GL_FALSE);
+    glDepthMask(GL_FALSE); // read only
     //glDisable(GL_DEPTH_TEST);
     for (NodeDistShader a : transparent_nodes)
         renderNode(a.node, a.s, nullptr, false);
     std::cout << transparent_nodes.size() << std::endl;
-    glDepthMask(GL_TRUE); 
+    glDepthMask(GL_TRUE); // read write
     //glEnable(GL_DEPTH_TEST);
     
     

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <map>
 
 
 namespace Gloom
@@ -19,16 +20,20 @@ namespace Gloom
     public:
         Shader()            { mProgram = glCreateProgram(); }
 
-        // hack?:
-        GLint location(std::string const& name) {
-            return glGetUniformLocation(mProgram, name.c_str());
-        }
-
         // Public member functions
         void   activate()   { glUseProgram(mProgram); }
         void   deactivate() { glUseProgram(0); }
         GLuint get()        { return mProgram; }
         void   destroy()    { glDeleteProgram(mProgram); }
+
+        GLint inline location(std::string const& name) {
+            static std::map<std::string, GLint> cache {};
+            auto it = cache.find(name);
+            if (it == cache.end())
+                return cache[name] = glGetUniformLocation(mProgram, name.c_str());
+            return it->second;
+            //return  glGetUniformLocation(mProgram, name.c_str());
+        }
 
         /* Attach a shader to the current shader program */
         void attach(std::string const &filename)
