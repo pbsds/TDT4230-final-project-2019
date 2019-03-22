@@ -1,5 +1,6 @@
 #include "imageLoader.hpp"
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 #include <glm/gtc/noise.hpp>
 #include <iostream>
 #include <vector>
@@ -7,10 +8,58 @@
 #include <string>
 
 using glm::vec2;
+using glm::vec4;
 using std::string;
 using std::map;
 using std::vector;
 typedef unsigned int uint;
+
+inline vec4 operator*(vec4 a, double s) {
+	return a *= s;
+}
+
+vec4 PNGImage::get(int x, int y) {
+	if (repeat_mirrored) {
+		x %= width *2;
+		y %= height*2;
+		if (x >= width)  x = width *2 - x - 1;
+		if (y >= height) y = height*2 - y - 1;
+	} else {
+		x %= width; y %= height;
+	}
+	return vec4(
+		float(pixels[x*4+y*width*4 + 0]) / 255,
+		float(pixels[x*4+y*width*4 + 1]) / 255,
+		float(pixels[x*4+y*width*4 + 2]) / 255,
+		float(pixels[x*4+y*width*4 + 3]) / 255);
+}
+vec4 PNGImage::at_nearest(double u, double v) {
+	int x = int( u*(width -1) + 0.5);
+	int y = int(-v*(height-1) - 0.5);
+	return get(x, y);
+}
+vec4 PNGImage::at_bilinear(double u, double v) {
+	double x =  u*double(width-1);
+	double y = -v*double(height-1);
+	int x1 = int(x + 0.0);
+	int x2 = int(x + 1.0);
+	int y1 = int(y + 0.0);
+	int y2 = int(y + 1.0);
+    double x2x = x2 - x;
+    double y2y = y2 - y;
+    double yy1 = y - y1;
+    double xx1 = x - x1;
+	vec4 q11 = get(x1, y1);
+	vec4 q21 = get(x2, y1);
+	vec4 q12 = get(x1, y2);
+	vec4 q22 = get(x2, y2);
+	return (
+		q11 * x2x * y2y +
+		q21 * xx1 * y2y +
+		q12 * x2x * yy1 +
+		q22 * xx1 * yy1
+	);
+}
 
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
 PNGImage loadPNGFile(string filename, bool flip_handedness) {
