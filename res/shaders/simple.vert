@@ -44,19 +44,19 @@ void main() {
     vec3 displacement = vec3(0.0);
     if (isDisplacementMapped) {
         float o = texture(displacementTexture, UV + uvOffset).r * 2.0 - 1.0;
-        float u = (texture(displacementTexture, UV + uvOffset + vec2(0.001, 0.0)).r*2.0-1.0 - o) / 0.004;
-        float v = (texture(displacementTexture, UV + uvOffset + vec2(0.0, 0.001)).r*2.0-1.0 - o) / 0.004;
+        //float u = (texture(displacementTexture, UV + uvOffset + vec2(0.001, 0.0)).r*2.0-1.0 - o) / 0.004;
+        //float v = (texture(displacementTexture, UV + uvOffset + vec2(0.0, 0.001)).r*2.0-1.0 - o) / 0.004;
         
         displacement = normal * displacementCoefficient * o;
     }
+
+    vertex_out = vec3(MV * vec4(position+displacement, 1.0f));
+    gl_Position =  MVP * vec4(position+displacement, 1.0f);
+
+    uv_out = UV + uvOffset;
+    color_out = color;
     
     normal_out = normalize(vec3(MVnormal * vec4(normal, 1.0f)));
-    vertex_out = vec3(MV * vec4(position+displacement, 1.0f));
-    uv_out = UV + uvOffset;
-    gl_Position =  MVP * vec4(position+displacement, 1.0f);
-    
-    color_out = color;
-
     tangent_out = normalize(vec3(MVnormal * vec4(tangent, 1.0f)));
     bitangent_out = normalize(vec3(MVnormal * vec4(bitangent, 1.0f)));
 }

@@ -62,8 +62,7 @@ vec3 reflection(vec3 basecolor, vec3 nnormal) {
         : mix(basecolor, reflection, reflexiveness);
 }
 
-vec3 phong(vec3 basecolor) {
-    vec3 nnormal; // normalized normal
+vec3 get_nnormal() {
     if (isNormalMapped) {
         mat3 TBN;
         if (isDisplacementMapped) {
@@ -83,19 +82,23 @@ vec3 phong(vec3 basecolor) {
                 normalize(normal)
             );
         }
-        nnormal = TBN * normalize(texture(normalTexture, UV).rgb * 2.0 - 1.0);
+        return TBN * normalize(texture(normalTexture, UV).rgb * 2.0 - 1.0);
     }
     else {
         if (isDisplacementMapped) {
             float o = texture(displacementTexture, UV).r * 2.0 - 1.0;
             float u = (texture(displacementTexture, UV + vec2(0.00001, 0.0)).r*2.0-1.0 - o) / 0.00004;
             float v = (texture(displacementTexture, UV + vec2(0.0, 0.00001)).r*2.0-1.0 - o) / 0.00004;
-            nnormal = normalize(cross(tangent + normal*u, bitangent + normal*v));
+            return normalize(cross(tangent + normal*u, bitangent + normal*v));
         }
         else {
-            nnormal = normalize(normal);
+            return normalize(normal);
         }
     }
+}
+
+vec3 phong(vec3 basecolor) {
+    vec3 nnormal = get_nnormal(); // normalized normal
 
     vec3 diffuse_component  = vec3(0.0);
     vec3 specular_component = vec3(0.0);
@@ -123,16 +126,16 @@ vec3 phong(vec3 basecolor) {
             ? pow(specular_i, shininess)
             : 0;
 
-        specular_component += specular_color * light[i].color * specular_i * attenuation;
-        if (diffuse_i>0)  diffuse_component += diffuse_color * light[i].color * diffuse_i * attenuation;
+        specular_component += light[i].color * specular_i * attenuation;
+        if (diffuse_i>0)  diffuse_component += light[i].color * diffuse_i * attenuation;
     }
 
-    basecolor *= (emissive_color + diffuse_component);
+    basecolor *= (emissive_color + diffuse_color *diffuse_component);
 
     if (isReflectionMapped)
         basecolor = reflection(basecolor, nnormal);
 
-    return basecolor + specular_component;
+    return basecolor + specular_color * specular_component;
 }
 
 void main() {
