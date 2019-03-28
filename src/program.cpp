@@ -32,7 +32,9 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
 
 	initRenderer(window, options);
-
+    init_scene(options);
+    getTimeDeltaSeconds();
+    
     // Rendering Loop
     while (!glfwWindowShouldClose(window))
     {
@@ -41,7 +43,9 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 
         int w, h;
         glfwGetWindowSize(window, &w, &h);
-
+        
+        step_scene(getTimeDeltaSeconds());
+        
         updateFrame(window, w, h);
         renderFrame(window, w, h);
 

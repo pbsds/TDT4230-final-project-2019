@@ -3,7 +3,6 @@
 #include <GLFW/glfw3.h>
 #include <SFML/Audio/Sound.hpp>
 #include <SFML/Audio/SoundBuffer.hpp>
-#include <chrono>
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -13,7 +12,6 @@
 #include <algorithm>
 #include <utilities/glfont.h>
 #include <utilities/shader.hpp>
-#include <utilities/timeutils.h>
 
 using glm::vec3;
 using glm::vec4;
@@ -51,11 +49,6 @@ void initRenderer(GLFWwindow* window, CommandLineOptions options) {
     }
 
     glfwSetCursorPosCallback(window, mouse_callback);
-    
-    init_scene(options);
-    
-    // init
-    getTimeDeltaSeconds();
 }
 
 // traverses and updates matricies
@@ -81,11 +74,7 @@ void updateNodeTransformations(SceneNode* node, mat4 transformationThusFar, mat4
 
 // step
 void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
-    double timeDelta = getTimeDeltaSeconds();
     float aspect = float(windowWidth) / float(windowHeight);
-    
-    // main action:
-    step_scene(timeDelta);
 
     // calculate camera
     mat4 projection = glm::perspective(
@@ -185,7 +174,9 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
             }
             else if(node->vertexArrayObjectID != -1) {
                 // load uniforms
-                um4fv(MVP); um4fv(MV); um4fv(MVnormal);
+                um4fv(MVP);
+                um4fv(MV);
+                um4fv(MVnormal);
                 u2fv (uvOffset);
                 u3fv (diffuse_color);
                 u3fv (emissive_color);
@@ -263,7 +254,7 @@ void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     //glDisable(GL_DEPTH_TEST);
     for (NodeDistShader a : transparent_nodes)
         renderNode(a.node, a.s, nullptr, false);
-    std::cout << transparent_nodes.size() << std::endl;
+    //std::cout << transparent_nodes.size() << std::endl;
     glDepthMask(GL_TRUE); // read write
     //glEnable(GL_DEPTH_TEST);
     

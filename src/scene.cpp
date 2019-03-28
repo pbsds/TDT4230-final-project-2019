@@ -53,7 +53,6 @@ PNGImage t_cobble_normal = loadPNGFile("../res/textures/cobble_normal.png");
 PNGImage t_plain_diff    = loadPNGFile("../res/textures/plain_diff.png");
 PNGImage t_plain_normal  = loadPNGFile("../res/textures/plain_normal.png", true);
 PNGImage t_reflection    = loadPNGFile("../res/textures/reflection_field.png");
-PNGImage t_reflection2   = loadPNGFile("../res/textures/reflection_blurry.png");
 PNGImage t_perlin        = makePerlinNoisePNG(256, 256, 0.05/16);
 
 void init_scene(CommandLineOptions options) {
