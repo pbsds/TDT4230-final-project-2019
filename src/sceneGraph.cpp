@@ -61,7 +61,7 @@ void SceneNode::setTexture(
 	}
 }
 void SceneNode::setMaterial(const Material& mat, bool recursive) {
-	reflexiveness = mat.reflexiveness;
+	if(mat.reflection_texture)reflexiveness  = mat.reflexiveness;
 	if (!mat.ignore_diffuse)  diffuse_color  = mat.diffuse_color;
 	if (!mat.ignore_emissive) emissive_color = mat.emissive_color;
 	if (!mat.ignore_specular) specular_color = mat.specular_color;

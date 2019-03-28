@@ -2,6 +2,7 @@
 #include "material.hpp"
 #include "imageLoader.hpp"
 
+// applies other on top of this, creating a new material
 Material Material::apply(const Material& other) const {
 	Material out(*this);
 	
@@ -23,7 +24,6 @@ Material Material::apply(const Material& other) const {
 	
 	return out;
 }
-
 
 Material Material::diffuse(glm::vec3 color) const {
 	Material out(*this);
