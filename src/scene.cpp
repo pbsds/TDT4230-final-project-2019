@@ -18,9 +18,14 @@ using std::cout;
 using std::endl;
 typedef unsigned int uint;
 
-vec3 cameraPosition = vec3(0, 0, 400);
-vec3 cameraLookAt = vec3(500, 500, 0);
+//vec3 cameraPosition = vec3(500, -100, 150);
+vec3 cameraPosition = vec3(500, -140, 200);
+vec3 cameraLookAt = vec3(500, 220, 0);
 vec3 cameraUpward = vec3(0, 0, 1);
+
+const size_t N_GRASS = 150;
+const size_t N_TREES = 30;
+const size_t DISPLACEMENT = 40;
 
 SceneNode* rootNode;
 SceneNode* hudNode;
@@ -34,9 +39,11 @@ SceneNode* boxNode;
 SceneNode* sphereNode;
 SceneNode* textNode;
 
+vector<SceneNode*> movingNodes;
+
 Gloom::Shader* default_shader;
-Gloom::Shader* plain_shader;
-Gloom::Shader* post_shader;
+//Gloom::Shader* plain_shader;
+//Gloom::Shader* post_shader;
 
 // todo: const the following:
 
@@ -70,33 +77,40 @@ void init_scene(CommandLineOptions options) {
     for (uint i = 0; i<N_LIGHTS; i++) {
         lightNode[i] = createSceneNode(POINT_LIGHT);
         lightNode[i]->lightID = i;
-        rootNode->children.push_back(lightNode[i]);
     }
     
-    //treeNode = loadModelScene("../res/models/fur_tree", "scene.gltf");
-    //treeNode->position = {300, 800, 10};
-    //rootNode->children.push_back(treeNode);
-    
-    //uint i = 30;
-    //while (i--) {
-    //    SceneNode* asd = treeNode->clone();
-    //    asd->position.x = (std::rand() % 10000) / 10;
-    //    asd->position.y = (std::rand() % 10000) / 10;
-    //    rootNode->children.push_back(asd);
-    //}
-    
-    grassNode = loadModelScene("../res/models/single_grass", "scene.gltf");
-    grassNode->position = {400, 400, 15};
-    rootNode->children.push_back(grassNode);
-    for (uint i = 100; i--;) {
-        SceneNode* asd = grassNode->clone();
-        asd->position.x = (std::rand() % 10000) / 10;
-        asd->position.y = (std::rand() % 10000) / 10;
-        rootNode->children.push_back(asd);
+    SceneNode* treeModel = loadModelScene("../res/models/fur_tree", "scene.gltf");
+    treeModel->setMaterial(Material().emissive(vec3(0.2)).emissive_only().no_texture_reset(), true);
+    treeModel->scale *= 0.8;
+    treeModel->scale.z *= 0.8;
+    for (uint i = N_TREES; i--;) {
+        SceneNode* tree = treeModel->clone();
+        tree->position.x = (rand() % 10000) / 10;
+        tree->position.y = (rand() % 10000) / 10;
+        tree->position.z = DISPLACEMENT * (t_perlin.at_bilinear(tree->position.x*3/1000, tree->position.y*3/1000).x * 2 - 1) - 0.5;
+        //node->position.z = DISPLACEMENT * (t_perlin.at_nearest(node->position.x*3/1000, node->position.y*3/1000).x * 2 - 1) - 0.5;
+        tree->rotation.z = (rand() % 31415) / 10000;
+        tree->scale.z *= 0.8 + (rand()%100)/250;
+        rootNode->children.push_back(tree);
+        movingNodes.push_back(tree);
     }
     
+    SceneNode* grassModel = loadModelScene("../res/models/single_grass", "scene.gltf");
+    grassModel->setMaterial(Material().emissive(vec3(0.2)).emissive_only().no_texture_reset(), true);
+    grassModel->scale *= 1.3;
+    grassModel->scale.z *= 0.4;
+    for (uint i = N_GRASS; i--;) {
+        SceneNode* grass = grassModel->clone();
+        grass->position.x = (rand() % 10000) / 10;
+        grass->position.y = (rand() % 10000) / 10;
+        grass->position.z = DISPLACEMENT * (t_perlin.at_bilinear(grass->position.x*3/1000, grass->position.y*3/1000).x * 2 - 1) - 0.5;
+        grass->rotation.z = (rand() % 31415) / 10000;
+        grass->scale.z *= 0.8 + (rand()%100)/250;
+        rootNode->children.push_back(grass);
+        movingNodes.push_back(grass);
+    }
+    //treeNode
     
-    /*
     carNode = loadModelScene("../res/models/beetle", "scene.gltf", {
         { 0, Material().diffuse({0.0, 0.0, 1.0}).diffuse_only().reflection_mapped(&t_reflection, 0.15)},// Blue_Metal
         { 1, Material().diffuse(vec3(0.85)).emissive(vec3(0.1)).reflection_mapped(&t_reflection, -1.0)},// Metal (decals)
@@ -114,18 +128,19 @@ void init_scene(CommandLineOptions options) {
         //{13, Material().diffuse({1.0, 1.0, 1.0})},// 
         });
     carNode->setMaterial(Material().backlight(vec3(0.3), 0.3).backlight_only().no_texture_reset(), true);
-    carNode->position = {500, 500, 100};
-    carNode->scale *= 100;
+    carNode->position = {522, 130, 0};
+    carNode->referencePoint = {0, -1, 0};
+    carNode->scale *= 28;
+    carNode->rotation.z = -glm::acos(1/glm::sqrt(5*5 + 1*1));
     rootNode->children.push_back(carNode);
-    */
     
     //create the scene:
     plainNode = createSceneNode();
     plainNode->setTexture(&t_plain_diff, &t_plain_normal, &t_perlin);
     plainNode->setMesh(&m_plain);
     plainNode->position = {0, 0, 0};
-    plainNode->shininess = 20;
-    plainNode->displacementCoefficient = 40;
+    plainNode->shininess = 10;
+    plainNode->displacementCoefficient = DISPLACEMENT;
     rootNode->children.push_back(plainNode);
     
     /*
@@ -140,29 +155,60 @@ void init_scene(CommandLineOptions options) {
     rootNode->children.push_back(boxNode);
     */
     
+    /*
     sphereNode = createSceneNode();
     //sphereNode->setTexture(&t_cobble_diff, &t_cobble_normal);
     sphereNode->setMesh(&m_sphere);
-    sphereNode->position = {500, 500, 100};
-    sphereNode->scale *= 15;
-    sphereNode->diffuse_color;
+    sphereNode->position = {470, 130, 100};
+    sphereNode->scale *= 0.2;
+    sphereNode->scale.z *= 150*5;
     sphereNode->setMaterial(Material().reflection_mapped(&t_reflection, 0.5).no_colors().no_texture_reset(), true);
-    //rootNode->children.push_back(sphereNode);
+    rootNode->children.push_back(sphereNode);
+    */
     
+    //sphereNode = createSceneNode();
+    //sphereNode->setMesh(&m_sphere);
+    //sphereNode->position = {0.9, -4.3, 1.1};
+    //sphereNode->scale *= 0.015;
+    //sphereNode->emissive_color = vec3(1.0);
+    //carNode->children.push_back(sphereNode);
+    
+    
+    
+    glClearColor(0.05, 0.1, 0.15, 1.0);
+
     lightNode[0]->position = {-600, 1400, 800};
+    lightNode[0]->position = {-600, 0, 800};
     lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0);
+    //lightNode[0]->light_color = vec3(0.3, 0.3, 0.9);
+    lightNode[0]->light_color = vec3(0.5, 0.5, 1.0);
+    rootNode->children.push_back(lightNode[0]);
+    
+    // car spotlights
+    lightNode[1]->nodeType = SPOT_LIGHT;
+    lightNode[1]->position = {0.9, -4.3, 1.1};
+    lightNode[2]->light_color = vec3(0.7, 0.7, 0.5);
+    lightNode[1]->spot_direction = glm::normalize(vec3(-1, -0.15, 0));
+    lightNode[1]->spot_cuttof_cos = glm::cos(glm::radians(20.0));
+    lightNode[1]->transform_spot = true;
+    lightNode[1]->attenuation = vec3(1.0, 0.0, 0.000005);
+    carNode->children.push_back(lightNode[1]);
+    
+    lightNode[2]->nodeType = SPOT_LIGHT;
+    lightNode[2]->position = {-0.9, -4.3, 1.1};
+    lightNode[2]->light_color = vec3(0.7, 0.7, 0.5);
+    lightNode[2]->spot_direction = glm::normalize(vec3(-1, -0.15, 0));
+    lightNode[2]->spot_cuttof_cos = glm::cos(glm::radians(20.0));
+    lightNode[2]->transform_spot = true;
+    lightNode[2]->attenuation = vec3(1.0, 0.0, 0.000005);
+    carNode->children.push_back(lightNode[2]);
     
     /*
-    lightNode[1]->position = {500, 0, 80};
-    lightNode[1]->referencePoint = {0, 500, 0};
-    lightNode[1]->scale *= 0.8;
-    lightNode[1]->light_color = vec3(0.0);
-    lightNode[1]->attenuation = vec3(1.0, 0.0, 0.000005);
-    
     lightNode[2]->position = {400, -200, 300};
     lightNode[2]->nodeType = SPOT_LIGHT;
     lightNode[2]->attenuation = vec3(1, 0, 0);
     lightNode[2]->spot_target = lightNode[1];
+    rootNode->children.push_back(lightNode[1]);
     */
     
     textNode = createSceneNode();
@@ -187,13 +233,47 @@ void step_scene(double timeDelta) {
     
     cout << "td: " << timeDelta << " " << 1/timeDelta << endl;
     
-    plainNode->uvOffset.x += timeDelta*0.5;
-    plainNode->uvOffset.y -= timeDelta*0.5;
+    
     if (boxNode) boxNode->rotation.z += timeDelta;
-    lightNode[1]->rotation.z -= timeDelta;
-    //lightNode[1]->position.z = 80 + 40*glm::sin(5 * lightNode[1]->rotation.z);
-    if(carNode) carNode->rotation.z += timeDelta;
-    if(treeNode) treeNode->rotation.z += timeDelta;
+
+    //carNode->rotation.x = glm::sin(timeAcc*2);
+    
+    {
+        vec3 o = carNode->position;
+        o.x += plainNode->uvOffset.x*1000/3;
+        o.y += plainNode->uvOffset.y*1000/3;
+        float t = carNode->rotation.z + 3*3.1415926535/2.0;
+        
+        vec3 fr =  o + vec3(60*glm::cos(t), 60*glm::sin(t), 0) + vec3(30*glm::sin(t), -30*glm::cos(t), 0);
+        vec3 fl =  o + vec3(60*glm::cos(t), 60*glm::sin(t), 0) - vec3(30*glm::sin(t), -30*glm::cos(t), 0);
+        vec3 bl =  o - vec3(40*glm::cos(t), 40*glm::sin(t), 0) - vec3(30*glm::sin(t), -30*glm::cos(t), 0);
+        vec3 br =  o - vec3(40*glm::cos(t), 40*glm::sin(t), 0) + vec3(30*glm::sin(t), -30*glm::cos(t), 0);
+        //sphereNode->position = fr; // to check where it is
+        
+        float frh = DISPLACEMENT * (t_perlin.at_bilinear(fr.x*3/1000, fr.y*3/1000).x * 2 - 1);
+        float flh = DISPLACEMENT * (t_perlin.at_bilinear(fl.x*3/1000, fl.y*3/1000).x * 2 - 1);
+        float brh = DISPLACEMENT * (t_perlin.at_bilinear(br.x*3/1000, br.y*3/1000).x * 2 - 1);
+        float blh = DISPLACEMENT * (t_perlin.at_bilinear(bl.x*3/1000, bl.y*3/1000).x * 2 - 1);
+
+        cout << o.x << " " << o.y << endl;
+        cout << frh << "\t" << flh << "\t" << blh << "\t" << brh << endl;
+        cout << ((frh+flh)-(brh+blh))/2 / 100 << endl;
+        
+        carNode->rotation.x = -glm::asin(((frh+flh)-(brh+blh)) / 2 / 100);
+        carNode->rotation.y =  glm::asin(((frh+brh)-(flh+blh)) / 2 / 60);
+        carNode->position.z = (frh+flh+blh+brh)/4.0;
+    }
+    
+    plainNode->uvOffset.x -= timeDelta*0.5;
+    plainNode->uvOffset.y -= timeDelta*0.1;
+    
+    for (SceneNode* node : movingNodes) {
+        node->position.x += timeDelta*500/3;
+        node->position.y += timeDelta*100/3;
+        if (node->position.x > 1000.0) node->position.x -= 1000.0;
+        if (node->position.y > 1000.0) node->position.y -= 1000.0;
+        //node->position.z = DISPLACEMENT * (t_perlin.at_bilinear(node->position.x*3/1000, node->position.y*3/1000).x * 2 - 1) - 0.5;
+    }
 
     /*
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
