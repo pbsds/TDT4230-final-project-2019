@@ -130,7 +130,7 @@ vec3 phong(vec3 basecolor, vec3 nnormal) {
         if (diffuse_i>0)  diffuse_component += light[i].color * diffuse_i * attenuation;
     }
 
-    basecolor *= (emissive_color + diffuse_color *diffuse_component);
+    basecolor *= (emissive_color*light[0].color + diffuse_color *diffuse_component);
 
     if (isReflectionMapped)
         basecolor = reflection(basecolor, nnormal);

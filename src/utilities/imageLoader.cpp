@@ -34,21 +34,21 @@ vec4 PNGImage::get(int x, int y) {
 		float(pixels[x*4+y*width*4 + 3]) / 255);
 }
 vec4 PNGImage::at_nearest(double u, double v) {
-	int x = int( u*(width -1) + 0.5);
-	int y = int(-v*(height-1) - 0.5);
+	int x = int( u*(width) - 0.5);
+	int y = int(-v*(height) + 0.5);
 	return get(x, y);
 }
 vec4 PNGImage::at_bilinear(double u, double v) {
-	double x =  u*double(width-1);
-	double y = -v*double(height-1);
+	double x =  u*double(width) - 0.5;
+	double y = -v*double(height) + 0.5;
 	int x1 = int(x + 0.0);
-	int x2 = int(x + 1.0);
 	int y1 = int(y + 0.0);
+	int x2 = int(x + 1.0);
 	int y2 = int(y + 1.0);
-    double x2x = x2 - x;
-    double y2y = y2 - y;
-    double yy1 = y - y1;
-    double xx1 = x - x1;
+	double xx1 = x - x1;
+	double yy1 = y - y1;
+	double x2x = 1 - xx1;
+	double y2y = 1 - yy1;
 	vec4 q11 = get(x1, y1);
 	vec4 q21 = get(x2, y1);
 	vec4 q12 = get(x1, y2);
