@@ -208,7 +208,9 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
             uint id = node->lightID;
             lights[id].position          = vec3(node->MV * vec4(vec3(0.0), 1.0));
             lights[id].is_spot           = node->nodeType == SPOT_LIGHT;
-            lights[id].spot_direction    = node->spot_direction; // MV space
+            lights[id].spot_direction    = (node->transform_spot)
+                ? node->spot_direction                                   // MV space
+                : vec3(node->MVnormal * vec4(node->spot_direction, 1.0));// Model space
             lights[id].spot_cuttof_cos   = node->spot_cuttof_cos;
             lights[id].attenuation       = node->attenuation;
             lights[id].color             = node->light_color;

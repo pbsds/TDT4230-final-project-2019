@@ -57,6 +57,7 @@ struct SceneNode {
 	float spot_cuttof_cos = glm::cos(glm::radians(1.5));
 	vec3 spot_direction = vec3(0.0); // in MV space, must be normalized, automatically updated by spot_target
 	SceneNode* spot_target  = nullptr; // spot will follow this node
+	bool transform_spot = false; // if true, spot_direction will be in model space.
 
 	// The node's position and rotation relative to its parent
 	vec3 position = vec3(0, 0, 0);
