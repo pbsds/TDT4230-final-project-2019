@@ -66,6 +66,8 @@ void SceneNode::setMaterial(const Material& mat, bool recursive) {
 	if (!mat.ignore_emissive) emissive_color = mat.emissive_color;
 	if (!mat.ignore_specular) specular_color = mat.specular_color;
 	if (!mat.ignore_specular) shininess      = mat.shininess;
+	if (!mat.ignore_backlight)backlight_color= mat.backlight_color;
+	if (!mat.ignore_backlight)backlight_strength= mat.backlight_strength;
 	setTexture(
 		mat.diffuse_texture,
 		mat.normal_texture,

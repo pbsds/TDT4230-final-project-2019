@@ -7,9 +7,11 @@ struct Material {
 	float opacity = 1.0;
 	float shininess = 1; // specular
 	float reflexiveness = 0;
+	float backlight_strength = 0;
 	glm::vec3 diffuse_color  = glm::vec3(1.0);
 	glm::vec3 emissive_color = glm::vec3(0.5);
 	glm::vec3 specular_color = glm::vec3(0.2);
+	glm::vec3 backlight_color= glm::vec3(0.0);
 	PNGImage* diffuse_texture      = nullptr;
 	PNGImage* normal_texture       = nullptr;
 	PNGImage* displacement_texture = nullptr;
@@ -18,6 +20,7 @@ struct Material {
 	bool ignore_diffuse  = false;
 	bool ignore_emissive = false;
 	bool ignore_specular = false;
+	bool ignore_backlight= false;
 	bool texture_reset = true;
 	
 	Material apply(const Material& other) const;
@@ -25,6 +28,7 @@ struct Material {
 	Material diffuse(glm::vec3 color) const;
 	Material specular(glm::vec3 color, float shininess) const;
 	Material emissive(glm::vec3 color) const;
+	Material backlight(glm::vec3 color, float strength) const;
 	Material textured(PNGImage* diffuse) const;
 	Material normal_mapped(PNGImage* normal) const;
 	Material diffuse_mapped(PNGImage* diffuse) const;
@@ -37,7 +41,9 @@ struct Material {
 	Material no_diffuse() const;
 	Material no_emissive() const;
 	Material no_specular() const;
-	Material diffuse_only() const; // and not the other two
-	Material emissive_only() const; // and not the other two
-	Material specular_only() const; // and not the other two
+	Material no_backlight() const;
+	Material diffuse_only() const; // and not the other three
+	Material emissive_only() const; // and not the other three
+	Material specular_only() const; // and not the other three
+	Material backlight_only() const; // and not the other three
 };

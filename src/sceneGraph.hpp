@@ -71,10 +71,12 @@ struct SceneNode {
 	// textures and materials
 	float opacity = 1.0;
 	float shininess = 1.0; // specular power
+	float backlight_strength = 0.0;
 	float reflexiveness = 0.0; // 0 is no reflection, 1 is a mirror. Negative value will have it multiply with base instead
 	vec3 diffuse_color  = vec3(1.0);
 	vec3 emissive_color = vec3(0.5);
 	vec3 specular_color = vec3(0.2);
+	vec3 backlight_color = vec3(0.2);
 	vec2 uvOffset = vec2(0.0, 0.0); // specular power
 	uint diffuseTextureID;
 	uint normalTextureID;

@@ -190,8 +190,10 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
                 u3fv (diffuse_color);
                 u3fv (emissive_color);
                 u3fv (specular_color);
+                u3fv (backlight_color);
                 u1f  (opacity);
                 u1f  (shininess);
+                u1f  (backlight_strength);
                 u1f  (reflexiveness);
                 u1f  (displacementCoefficient);
                 u1ui (isTextured);

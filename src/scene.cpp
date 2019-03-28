@@ -114,6 +114,7 @@ void init_scene(CommandLineOptions options) {
         //{12, Material().diffuse({1.0, 1.0, 1.0})},// License_Plate_Frame
         //{13, Material().diffuse({1.0, 1.0, 1.0})},// 
         });
+    carNode->setMaterial(Material().backlight(vec3(0.3), 0.3).backlight_only().no_texture_reset(), true);
     carNode->position = {500, 500, 100};
     carNode->scale *= 100;
     rootNode->children.push_back(carNode);

@@ -12,6 +12,7 @@ Material Material::apply(const Material& other) const {
 	if (!other.ignore_diffuse)  out.ignore_diffuse  = false;
 	if (!other.ignore_emissive) out.ignore_emissive = false;
 	if (!other.ignore_specular) out.ignore_specular = false;
+	if (!other.ignore_backlight)out.ignore_backlight= false;
 	if (!other.texture_reset)   out.texture_reset   = true;
 	
 	if (other.texture_reset || other.diffuse_texture)      out.diffuse_texture      = other.diffuse_texture;
@@ -38,6 +39,12 @@ Material Material::specular(glm::vec3 color, float shininess) const {
 Material Material::emissive(glm::vec3 color) const {
 	Material out(*this);
 	out.emissive_color = color;
+	return out;
+}
+Material Material::backlight(glm::vec3 color, float strength) const {
+	Material out(*this);
+	out.backlight_color = color;
+	out.backlight_strength = strength;
 	return out;
 }
 Material Material::textured(PNGImage* diffuse) const {
@@ -76,6 +83,7 @@ Material Material::no_colors() const {
 	out.ignore_diffuse = true;
 	out.ignore_emissive = true;
 	out.ignore_specular = true;
+	out.ignore_backlight = true;
 	return out;
 }
 Material Material::no_diffuse() const {
@@ -93,12 +101,20 @@ Material Material::no_specular() const {
 	out.ignore_specular = true;
 	return out;
 }
+Material Material::no_backlight() const {
+	Material out(*this);
+	out.ignore_backlight = true;
+	return out;
+}
 Material Material::diffuse_only() const {
-	return this->no_emissive().no_specular();
+	return this->no_emissive().no_specular().no_backlight();
 }
 Material Material::emissive_only() const {
-	return this->no_diffuse().no_specular();
+	return this->no_diffuse().no_specular().no_backlight();
 }
 Material Material::specular_only() const {
-	return this->no_diffuse().no_emissive();
+	return this->no_diffuse().no_emissive().no_backlight();
+}
+Material Material::backlight_only() const {
+	return this->no_diffuse().no_emissive().no_specular();
 }

@@ -20,10 +20,12 @@ uniform mat4 MVnormal;
 // material
 uniform float opacity;
 uniform float shininess;
+uniform float backlight_strength;
 uniform float reflexiveness;
 uniform vec3 diffuse_color;
 uniform vec3 specular_color;
 uniform vec3 emissive_color;
+uniform vec3 backlight_color;
 
 uniform bool isIlluminated;
 uniform bool isTextured;
@@ -97,9 +99,7 @@ vec3 get_nnormal() {
     }
 }
 
-vec3 phong(vec3 basecolor) {
-    vec3 nnormal = get_nnormal(); // normalized normal
-
+vec3 phong(vec3 basecolor, vec3 nnormal) {
     vec3 diffuse_component  = vec3(0.0);
     vec3 specular_component = vec3(0.0);
 
@@ -139,16 +139,19 @@ vec3 phong(vec3 basecolor) {
 }
 
 void main() {
+    vec3 nnormal = get_nnormal(); // normalized normal
     vec4 c = vec4(vec3(1.0), opacity);
     if (isVertexColored)    c *= color;
     if (isTextured)         c *= texture(diffuseTexture, UV);
     if (isInverted)         c.rgb = 1 - c.rgb;
-    if (isIlluminated)      c.rgb = phong(c.rgb);
-    else{
+    if (isIlluminated)      c.rgb = phong(c.rgb, nnormal);
+    else {
         c.rgb *= diffuse_color;
         if (isReflectionMapped)
             c.rgb = reflection(c.rgb, normalize(normal));
     }
+    if (backlight_strength > 0.05)
+        c.rgb += backlight_color * clamp((dot(normalize(vertex), nnormal) + backlight_strength) / backlight_strength, 0, 1);
     //c.rgb = diffuse_color;
     //c.rgb = emissive_color;
     //c.rgb = specular_color;
