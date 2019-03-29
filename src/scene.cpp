@@ -13,6 +13,7 @@
 #include <utilities/shapes.h>
 #include <utilities/timeutils.h>
 #include <utilities/glfont.h>
+#include <utilities/glmhelpers.hpp>
 
 using std::cout;
 using std::endl;
@@ -26,6 +27,7 @@ vec3 cameraUpward = vec3(0, 0, 1);
 const size_t N_GRASS = 150;
 const size_t N_TREES = 30;
 const size_t DISPLACEMENT = 40;
+const vec2 plane_movement = {0.5, 0.1};
 
 SceneNode* rootNode;
 SceneNode* hudNode;
@@ -264,12 +266,10 @@ void step_scene(double timeDelta) {
         carNode->position.z = (frh+flh+blh+brh)/4.0;
     }
     
-    plainNode->uvOffset.x -= timeDelta*0.5;
-    plainNode->uvOffset.y -= timeDelta*0.1;
+    plainNode->uvOffset -= timeDelta * plane_movement;
     
     for (SceneNode* node : movingNodes) {
-        node->position.x += timeDelta*500/3;
-        node->position.y += timeDelta*100/3;
+        node->position += vec3(plane_movement * (timeDelta*1000/3), 0.0);
         if (node->position.x > 1000.0) node->position.x -= 1000.0;
         if (node->position.y > 1000.0) node->position.y -= 1000.0;
         //node->position.z = DISPLACEMENT * (t_perlin.at_bilinear(node->position.x*3/1000, node->position.y*3/1000).x * 2 - 1) - 0.5;
