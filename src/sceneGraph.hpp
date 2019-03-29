@@ -99,6 +99,7 @@ struct SceneNode {
 	bool isInverted = false;
 
 	// rendering
+	bool isHidden = false;
 	Gloom::Shader* shader = nullptr;
 	mat4 MVP; // MVP
 	mat4 MV; // MV

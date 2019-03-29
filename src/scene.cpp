@@ -244,7 +244,7 @@ void step_scene(double timeDelta) {
         vec3 o = carNode->position;
         o.x += plainNode->uvOffset.x*1000/3;
         o.y += plainNode->uvOffset.y*1000/3;
-        float t = carNode->rotation.z + 3*3.1415926535/2.0;
+        float t/*heta*/ = carNode->rotation.z + 3*3.1415926535/2.0;
         
         vec3 fr =  o + vec3(60*glm::cos(t), 60*glm::sin(t), 0) + vec3(30*glm::sin(t), -30*glm::cos(t), 0);
         vec3 fl =  o + vec3(60*glm::cos(t), 60*glm::sin(t), 0) - vec3(30*glm::sin(t), -30*glm::cos(t), 0);
@@ -273,6 +273,12 @@ void step_scene(double timeDelta) {
         if (node->position.x > 1000.0) node->position.x -= 1000.0;
         if (node->position.y > 1000.0) node->position.y -= 1000.0;
         //node->position.z = DISPLACEMENT * (t_perlin.at_bilinear(node->position.x*3/1000, node->position.y*3/1000).x * 2 - 1) - 0.5;
+        
+        // cull objects in the cars path
+        vec2 PQ = vec2(node->position - carNode->position);
+        vec2 N = flip(plane_movement)*vec2(1, -1);
+        float dist_from_path = glm::length(glm::dot(PQ, N)) / glm::length(N);
+        node->isHidden = dist_from_path < 60;
     }
 
     /*

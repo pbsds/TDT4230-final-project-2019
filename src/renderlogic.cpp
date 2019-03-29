@@ -144,6 +144,8 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
     static Gloom::Shader* s = nullptr; // The currently active shader
     static Gloom::Shader* prev_s = nullptr; // The last shader to glDrawElements
     
+    if (node->isHidden) return;
+    
     // activate the correct shader
     Gloom::Shader* node_shader = (node->shader != nullptr)
         ? node->shader
@@ -173,6 +175,7 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
                 //transparent_nodes->push_back({node, node_shader, glm::length(vec3(node->MVP*vec4(0,0,0,1)))});
             }
             else if(node->vertexArrayObjectID != -1) {
+                if (node->opacity <= 0.05) break;
                 // load uniforms
                 um4fv(MVP);
                 um4fv(MV);
