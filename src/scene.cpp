@@ -138,10 +138,10 @@ void init_scene(CommandLineOptions options) {
     
     //create the scene:
     plainNode = createSceneNode();
+    plainNode->setMaterial(Material().specular(vec3(0.15), 3));
     plainNode->setTexture(&t_plain_diff, &t_plain_normal, &t_perlin);
     plainNode->setMesh(&m_plain);
     plainNode->position = {0, 0, 0};
-    plainNode->shininess = 10;
     plainNode->displacementCoefficient = DISPLACEMENT;
     rootNode->children.push_back(plainNode);
     
@@ -187,32 +187,40 @@ void init_scene(CommandLineOptions options) {
     rootNode->children.push_back(lightNode[0]);
     
     // car spotlights
-    lightNode[1]->nodeType = SPOT_LIGHT;
-    lightNode[1]->position = {0.9, -4.3, 1.1};
-    lightNode[2]->light_color = vec3(0.7, 0.7, 0.5);
-    lightNode[1]->spot_direction = glm::normalize(vec3(-1, -0.15, 0));
-    lightNode[1]->spot_cuttof_cos = glm::cos(glm::radians(20.0));
-    lightNode[1]->transform_spot = true;
-    lightNode[1]->attenuation = vec3(1.0, 0.0, 0.000005);
-    carNode->children.push_back(lightNode[1]);
+    for (uint i =1; i < 3; i++) {
+        lightNode[i]->nodeType = SPOT_LIGHT;
+        lightNode[i]->position = {0.9, -4.3, 1.1};
+        lightNode[i]->light_color = vec3(0.7, 0.7, 0.5);
+        lightNode[i]->spot_direction = glm::normalize(vec3(-1, -0.15, 0));
+        lightNode[i]->spot_cuttof_cos = glm::cos(glm::radians(20.0));
+        lightNode[i]->transform_spot = true;
+        lightNode[i]->attenuation = vec3(1.0, 0.0, 0.000005);
+        carNode->children.push_back(lightNode[i]);
+    }
+    lightNode[2]->position.x *= -1;
     
-    lightNode[2]->nodeType = SPOT_LIGHT;
-    lightNode[2]->position = {-0.9, -4.3, 1.1};
-    lightNode[2]->light_color = vec3(0.7, 0.7, 0.5);
-    lightNode[2]->spot_direction = glm::normalize(vec3(-1, -0.15, 0));
-    lightNode[2]->spot_cuttof_cos = glm::cos(glm::radians(20.0));
-    lightNode[2]->transform_spot = true;
-    lightNode[2]->attenuation = vec3(1.0, 0.0, 0.000005);
-    carNode->children.push_back(lightNode[2]);
+    // car backlights
+    for (uint i =3; i < 5; i++) {
+        lightNode[i]->nodeType = POINT_LIGHT;
+        lightNode[i]->position = {0.9, 1.3, 1.1};
+        lightNode[i]->light_color = vec3(1.0, 0, 0);
+        lightNode[i]->attenuation = vec3(1.0, 0, 0.003); // vec3(2.0, -0.175, 0.009);
+        carNode->children.push_back(lightNode[i]);
+    }
+    lightNode[4]->position.x *= -1;
     
-    /*
-    lightNode[2]->position = {400, -200, 300};
-    lightNode[2]->nodeType = SPOT_LIGHT;
-    lightNode[2]->attenuation = vec3(1, 0, 0);
-    lightNode[2]->spot_target = lightNode[1];
-    rootNode->children.push_back(lightNode[1]);
-    */
+    // car frontlights point component
+    for (uint i =5; i < 7; i++) {
+        lightNode[i]->nodeType = POINT_LIGHT;
+        lightNode[i]->position = {0.9, -4.7, 1.1};
+        lightNode[i]->light_color = vec3(0.7, 0.7, 0.5);
+        lightNode[i]->attenuation = vec3(1.0, -0.01, 0.005); // vec3(2.0, -0.175, 0.009);
+        carNode->children.push_back(lightNode[i]);
+    }
+    lightNode[6]->position.x *= -1;
+
     
+    // HUD
     textNode = createSceneNode();
     textNode->setTexture(&t_charmap);
     textNode->setMesh(&m_hello_world);

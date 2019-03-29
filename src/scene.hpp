@@ -3,7 +3,7 @@
 #include "sceneGraph.hpp"
 #include "utilities/window.hpp"
 
-const uint N_LIGHTS = 3;
+const uint N_LIGHTS = 7;
 
 extern SceneNode* rootNode;
 extern SceneNode* hudNode;
