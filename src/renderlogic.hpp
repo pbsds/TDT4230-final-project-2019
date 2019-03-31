@@ -7,6 +7,6 @@
 // further divied into:
 #include "scene.hpp"
 
-void initRenderer(GLFWwindow* window, CommandLineOptions options);
+void initRenderer(GLFWwindow* window,int windowWidth, int windowHeight);
 void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight);
 void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight);

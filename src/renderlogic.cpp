@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
-#include <utilities/glfont.h>
+#include <utilities/glutils.h>
 #include <utilities/shader.hpp>
 
 #include <utilities/timeutils.hpp>
@@ -26,8 +26,23 @@ typedef unsigned int uint;
 sf::Sound* sound;
 sf::SoundBuffer* buffer;
 
+// for keeping track of the currently loaded shader in renderNode()
+Gloom::Shader* current_shader = nullptr;
+Gloom::Shader* prev_shader = nullptr; // The last shader to glDrawElements
+
+
+// the framebuffer we render the scene to before post-processing
+GLuint framebufferID = 0;
+GLuint framebufferTextureID = 0;
+GLuint framebufferDepthBufferID = 0;
+GLuint framebufferDepthTextureID = 0;
+
+// the surface we use for post-processing
+GLuint postVAO;
+Gloom::Shader* post_shader = nullptr;
+
 void mouse_callback(GLFWwindow* window, double x, double y) {
-    static bool mouse_mode = false; 
+    static bool mouse_mode = false;
     int winw, winh;
     glfwGetWindowSize(window, &winw, &winh);
     glViewport(0, 0, winw, winh);
@@ -47,13 +62,64 @@ void mouse_callback(GLFWwindow* window, double x, double y) {
     }
 }
 
-void initRenderer(GLFWwindow* window, CommandLineOptions options) {
-    buffer = new sf::SoundBuffer();
-    if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
-        return;
+void initRenderer(GLFWwindow* window, int windowWidth, int windowHeight) {
+    static bool first/*time*/ = true;
+
+    if (first&&false) {
+        buffer = new sf::SoundBuffer();
+        if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
+            return;
+        }
     }
 
-    glfwSetCursorPosCallback(window, mouse_callback);
+    if(first) glfwSetCursorPosCallback(window, mouse_callback);
+
+    // setup the framebuffer we render the scene to, and the tris we render
+    // as the post-processing stage
+
+    if (first) glGenFramebuffers(1, &framebufferID);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+
+    if (first) glGenTextures(1, &framebufferTextureID);
+    glBindTexture(GL_TEXTURE_2D, framebufferTextureID);
+
+    // Give an empty image to OpenGL ( the last "0" )
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    
+    if (first) glGenTextures(1, &framebufferDepthTextureID);
+    glBindTexture(GL_TEXTURE_2D, framebufferDepthTextureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    if (first) glGenRenderbuffers(1, &framebufferDepthBufferID);
+    glBindRenderbuffer(GL_RENDERBUFFER, framebufferDepthBufferID);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDepthBufferID);
+    
+    // Set "framebufferTextureID" as our colour attachement #0
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, framebufferTextureID, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, framebufferDepthTextureID, 0);
+
+    // Set the list of draw buffers.
+    GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, drawBuffers);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << (glCheckFramebufferStatus(GL_FRAMEBUFFER)) << endl;
+        throw 1;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if (first) {
+        postVAO = generatePostQuadBuffer();
+        post_shader = new Gloom::Shader();
+        post_shader->makeBasicShader("../res/shaders/post.vert", "../res/shaders/post.frag");
+    }
+
+    first = false;
 }
 
 // traverses and updates matricies
@@ -146,38 +212,38 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
         }
     };
     static Light lights[N_LIGHTS];
-    static Gloom::Shader* s = nullptr; // The currently active shader
-    static Gloom::Shader* prev_s = nullptr; // The last shader to glDrawElements
-    
+
     if (node->isHidden) return;
-    
+
     // activate the correct shader
-    Gloom::Shader* node_shader = (node->shader != nullptr)
+    Gloom::Shader* s = (node->shader != nullptr)
         ? node->shader
         : parent_shader;
-    if (s != node_shader) {
-        s = node_shader;
-        s->activate();
+    if (current_shader != s) {
+        current_shader = s;
+        current_shader->activate();
         uint i = 0; for (Light l : lights) l.push_to_shader(s, i++);
     }
-    
-    bool shader_changed = s == prev_s;
-    #define cache(x) static decltype(node->x) cached_ ## x; if (shader_changed && cached_ ## x != node->x) { cached_ ## x = node->x;
+
+    bool shader_changed = current_shader != prev_shader;
+    #define init_cache(x) static decltype(node->x) cached_##x;
+    #define if_cache(x) if (shader_changed || cached_##x != node->x) { cached_##x = node->x;
+    #define cache(x) init_cache(x) if_cache(x)
     #define um4fv(x) cache(x) glUniformMatrix4fv(s->location(#x), 1, GL_FALSE, glm::value_ptr(node->x)); }
     #define u2fv(x)  cache(x) glUniform2fv( s->location(#x), 1, glm::value_ptr(node->x)); }
     #define u3fv(x)  cache(x) glUniform3fv( s->location(#x), 1, glm::value_ptr(node->x)); }
     #define u1f(x)   cache(x) glUniform1f(  s->location(#x), node->x); }
     #define u1ui(x)  cache(x) glUniform1ui( s->location(#x), node->x); }
-    #define ubtu(n,i,x) if(node->i) { cache(x) glBindTextureUnit(n, node->x); } }
-    
+    #define ubtu(n,i,x) init_cache(x) if(node->i) { if_cache(x) glBindTextureUnit(n, node->x); } } else cached_##x = -1;
+
     switch(node->nodeType) {
         case GEOMETRY:
             if (transparent_nodes!=nullptr && node->has_transparancy()) {
                 // defer to sorted pass later on
-                //transparent_nodes->emplace_back(node, node_shader, glm::length(vec3(node->MVP[3])));
-                //transparent_nodes->push_back({node, node_shader, glm::length(vec3(node->MVP[3]))});
-                transparent_nodes->emplace_back(node, node_shader, glm::length(vec3(node->MVP*vec4(0,0,0,1))));
-                //transparent_nodes->push_back({node, node_shader, glm::length(vec3(node->MVP*vec4(0,0,0,1)))});
+                //transparent_nodes->emplace_back(node, s, glm::length(vec3(node->MVP[3])));
+                //transparent_nodes->push_back({node, s, glm::length(vec3(node->MVP[3]))});
+                transparent_nodes->emplace_back(node, s, glm::length(vec3(node->MVP*vec4(0,0,0,1))));
+                //transparent_nodes->push_back({node, s, glm::length(vec3(node->MVP*vec4(0,0,0,1)))});
             }
             else if(node->vertexArrayObjectID != -1) {
                 if (node->opacity <= 0.05) break;
@@ -208,7 +274,7 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
                 ubtu(3, isReflectionMapped  , reflectionTextureID);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-                prev_s = s;
+                prev_shader = current_shader;
             }
             break;
         case SPOT_LIGHT:
@@ -239,19 +305,32 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
 
     if (do_recursive)
     for(SceneNode* child : node->children)
-        renderNode(child, node_shader, transparent_nodes, true);
+        renderNode(child, s, transparent_nodes, true);
 }
 
 // draw
 void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
-    glViewport(0, 0, windowWidth, windowHeight);
+    static int old_windowWidth  = windowWidth;
+    static int old_windowHeight = windowHeight;
+
+    if (old_windowWidth != windowWidth || old_windowHeight != windowHeight) {
+        old_windowWidth = windowWidth;
+        old_windowHeight = windowHeight;
+        cout << "reinit renderer" << endl;
+        initRenderer(window, old_windowWidth, windowHeight);
+    }
     
+    // render to internal buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+    glViewport(0, 0, windowWidth, windowHeight);
+
+    // Clear colour and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     static vector<NodeDistShader> transparent_nodes;
     transparent_nodes.clear();
-    
-    // externs from scene.hpp, they must have shaders set
-    renderNode(rootNode, nullptr, &transparent_nodes);
-    
+    renderNode(rootNode, nullptr, &transparent_nodes); // rootNode defined in scene.hpp
+
     // sort and render transparent node, sorted by distance from camera
     std::sort(
         transparent_nodes.begin(),
@@ -260,13 +339,29 @@ void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
             return a.dist > b.dist;
     });
     glDepthMask(GL_FALSE); // read only
-    //glDisable(GL_DEPTH_TEST);
     for (NodeDistShader a : transparent_nodes)
         renderNode(a.node, a.s, nullptr, false);
-    //std::cout << transparent_nodes.size() << std::endl;
     glDepthMask(GL_TRUE); // read write
-    //glEnable(GL_DEPTH_TEST);
+
+    renderNode(hudNode, nullptr); // rootNode defined in scene.hpp
+  
+    // render framebuffer to window
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, windowWidth, windowHeight);
+    post_shader->activate();
+    current_shader = post_shader;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
+    static Clock c;
+    static float t = 0.0;
+    t += c.getTimeDeltaSeconds();
+    glUniform1f(post_shader->location("time"), t);
+    glUniform1ui(post_shader->location("windowWidth"), windowWidth);
+    glUniform1ui(post_shader->location("windowHeight"), windowHeight);
+    glBindTextureUnit(0, framebufferTextureID);
+    glBindTextureUnit(1, framebufferDepthTextureID);
+    glBindVertexArray(postVAO);
+    glDrawElements(GL_TRIANGLES, 6 /*vertices*/, GL_UNSIGNED_INT, nullptr);
+    prev_shader = post_shader;
     
-    renderNode(hudNode, nullptr);
 }

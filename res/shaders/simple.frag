@@ -50,7 +50,7 @@ struct Light { // point lights, coordinates in MV space
 uniform Light light[N_LIGHTS];
 
 
-out vec4 color_out;
+layout(location = 0) out vec4 color_out;
 
 
 vec3 reflection(vec3 basecolor, vec3 nnormal) {
