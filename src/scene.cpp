@@ -20,8 +20,10 @@ using std::endl;
 typedef unsigned int uint;
 
 //vec3 cameraPosition = vec3(500, -100, 150);
-vec3 cameraPosition = vec3(500, -140, 200);
-vec3 cameraLookAt = vec3(500, 220, 0);
+//vec3 cameraPosition = vec3(500, -140, 200);
+vec3 cameraPosition = vec3(420, -120, 190);
+//vec3 cameraLookAt = vec3(500, 220, 0);
+vec3 cameraLookAt = vec3(460, 220, 0);
 vec3 cameraUpward = vec3(0, 0, 1);
 
 const size_t N_GRASS = 150;
