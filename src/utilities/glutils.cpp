@@ -135,3 +135,31 @@ uint generateTexture(const PNGImage& texture) {
     
     return id;
 }
+
+uint generatePostQuadBuffer() {
+    static const GLfloat post_vertices[] = {
+        -1,-1,0.5,   1,-1,0.5,  -1,1,0.5,
+        -1, 1,0.5,   1,-1,0.5,   1,1,0.5,
+    };
+    static const uint post_indexes[] = {
+        0, 1, 2, 3, 4, 5
+    };
+    
+    GLuint postVAO;
+    glGenVertexArrays(1, &postVAO);
+    glBindVertexArray(postVAO);
+    
+    GLuint verticeID;
+    glGenBuffers(1, &verticeID);
+    glBindBuffer(GL_ARRAY_BUFFER, verticeID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(post_vertices), post_vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    
+    uint indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(post_indexes), post_indexes, GL_STATIC_DRAW);
+    
+    return postVAO;
+}
