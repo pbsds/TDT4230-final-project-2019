@@ -11,7 +11,7 @@
 #include <utilities/mesh.h>
 #include <utilities/shader.hpp>
 #include <utilities/shapes.h>
-#include <utilities/timeutils.h>
+#include <utilities/timeutils.hpp>
 #include <utilities/glfont.h>
 #include <utilities/glmhelpers.hpp>
 
@@ -45,7 +45,6 @@ vector<SceneNode*> movingNodes;
 
 Gloom::Shader* default_shader;
 //Gloom::Shader* plain_shader;
-//Gloom::Shader* post_shader;
 
 // todo: const the following:
 
@@ -181,7 +180,7 @@ void init_scene(CommandLineOptions options) {
 
     lightNode[0]->position = {-600, 1400, 800};
     lightNode[0]->position = {-600, 0, 800};
-    lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0);
+    lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0); // the color of the first light affects the emissive component aswell
     //lightNode[0]->light_color = vec3(0.3, 0.3, 0.9);
     lightNode[0]->light_color = vec3(0.5, 0.5, 1.0);
     rootNode->children.push_back(lightNode[0]);
@@ -265,9 +264,9 @@ void step_scene(double timeDelta) {
         float brh = DISPLACEMENT * (t_perlin.at_bilinear(br.x*3/1000, br.y*3/1000).x * 2 - 1);
         float blh = DISPLACEMENT * (t_perlin.at_bilinear(bl.x*3/1000, bl.y*3/1000).x * 2 - 1);
 
-        cout << o.x << " " << o.y << endl;
-        cout << frh << "\t" << flh << "\t" << blh << "\t" << brh << endl;
-        cout << ((frh+flh)-(brh+blh))/2 / 100 << endl;
+        //cout << o.x << " " << o.y << endl;
+        //cout << frh << "\t" << flh << "\t" << blh << "\t" << brh << endl;
+        //cout << ((frh+flh)-(brh+blh))/2 / 100 << endl;
         
         carNode->rotation.x = -glm::asin(((frh+flh)-(brh+blh)) / 2 / 100);
         carNode->rotation.y =  glm::asin(((frh+brh)-(flh+blh)) / 2 / 60);

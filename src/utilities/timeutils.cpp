@@ -1,12 +1,10 @@
-#include <chrono>
-#include "timeutils.h"
+#include "timeutils.hpp"
 
+Clock::Clock() {
+	_prev = std::chrono::steady_clock::now();
+}
 
-// Calculates the elapsed time since the previous time this function was called.
-double getTimeDeltaSeconds() {
-	static std::chrono::steady_clock::time_point _prev
-		= std::chrono::steady_clock::now();
-	
+double Clock::getTimeDeltaSeconds() {
 	std::chrono::steady_clock::time_point now
 		= std::chrono::steady_clock::now();
 

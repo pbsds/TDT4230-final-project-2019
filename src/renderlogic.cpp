@@ -13,9 +13,14 @@
 #include <utilities/glfont.h>
 #include <utilities/shader.hpp>
 
+#include <utilities/timeutils.hpp>
+
+
 using glm::vec3;
 using glm::vec4;
 using glm::mat4;
+using std::cout;
+using std::endl;
 typedef unsigned int uint;
 
 sf::Sound* sound;
@@ -29,9 +34,9 @@ void mouse_callback(GLFWwindow* window, double x, double y) {
 
     double mx = (x - winw/2) / double(winh) * 2; // winh instead of winw, like the hudNode space
     double my = (winh/2 - y) / double(winh) * 2;
-    
+
     bool reset_mouse = mouse_position_handler(mx, my, winh/2);
-    
+
     if (reset_mouse)
         glfwSetCursorPos(window, winw/2, winh/2);
     if (reset_mouse != mouse_mode) {
@@ -85,7 +90,7 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
 
     mat4 cameraTransform
         = glm::lookAt(cameraPosition, cameraLookAt, cameraUpward);
-    
+
     // update scene with camera
     updateNodeTransformations(rootNode, mat4(1.0), cameraTransform, projection);
 
@@ -93,10 +98,10 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     // set orthographic VP for hud
     cameraTransform = mat4(1.0);
     projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f);
-    
+
     // update hud
     updateNodeTransformations(hudNode, mat4(1.0), cameraTransform, projection);
-    
+
     // update spots
     for (SceneNode* node : lightNode) {
         if (node->nodeType == SPOT_LIGHT && node->spot_target) {
@@ -105,7 +110,7 @@ void updateFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
                 - vec3(node->MV * vec4(0,0,0,1)));
         }
     }
-    
+
 }
 
 // traverses and renders one and one node
@@ -122,11 +127,11 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
         vec3  position; // MV
         vec3  attenuation;
         vec3  color;
-        
+
         bool  is_spot;
         vec3  spot_direction; // MV, must be normalized
         float spot_cuttof_cos;
-        
+
         void push_to_shader(Gloom::Shader* shader, uint id) {
             #define L(x) shader->location("light[" + std::to_string(id) + "]." #x)
             #define V(x) glUniform3fv(L(x), 1, glm::value_ptr(x))
@@ -233,9 +238,8 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
     #undef cache
 
     if (do_recursive)
-    for(SceneNode* child : node->children) {
+    for(SceneNode* child : node->children)
         renderNode(child, node_shader, transparent_nodes, true);
-    }
 }
 
 // draw
