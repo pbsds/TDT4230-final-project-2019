@@ -17,5 +17,14 @@ void main() {
 
     float z = pow(texture(depthbuffer, UV).r , 0x800);
     z = abs(z*2-1)*1.2;
-    color_out = vec4(vec3(texture(depthbuffer, UV).r), 1.0);
+    
+    int radius = int(5*z);
+    vec3 color = vec3(0);
+    for (int x = -radius; x <= radius; x++)
+    for (int y = -radius; y <= radius; y++){
+        vec2 p = UV + x*dx + y*dy;
+        color += texture(framebuffer, p);
+    }
+    color /= pow(2*radius+1, 2);
+    color_out = vec4(color, 1.0);
 }
