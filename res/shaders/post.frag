@@ -14,6 +14,10 @@ const float chomatic_abberation_r = 0.0;
 const float chomatic_abberation_g = 0.025;
 const float chomatic_abberation_b = 0.05;
 
+float random (vec2 st) {
+    return fract(sin(dot(st.xy, time*vec2(12.9898,78.233)))*43758.5453123);
+}
+
 void main() {
     vec2 dx = vec2(1,0) * 1.0/windowWidth;
     vec2 dy = vec2(0,1) * 1.0/windowHeight;
@@ -32,5 +36,6 @@ void main() {
         color.b += texture(framebuffer, (p-0.5)*(1+z*chomatic_abberation_b) + 0.5).b;
     }
     color /= pow(2*radius+1, 2);
+    color += (random(UV)-0.5) * z * 0.2;
     color_out = vec4(color * (1-pow(length((UV-0.5)*1.2), 3)), 1.0); // vignette
 }
