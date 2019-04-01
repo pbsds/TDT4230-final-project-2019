@@ -26,5 +26,5 @@ void main() {
         color += texture(framebuffer, p);
     }
     color /= pow(2*radius+1, 2);
-    color_out = vec4(color, 1.0);
+    color_out = vec4(color * (1-pow(length((UV-0.5)*1.2), 3)), 1.0); // vignette
 }
