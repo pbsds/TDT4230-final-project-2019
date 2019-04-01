@@ -11,9 +11,11 @@ uniform uint windowHeight;
 uniform float time;
 
 void main() {
-    float dx = 1.0/windowWidth;
-    float dy = 1.0/windowHeight;
-    
+    vec2 dx = vec2(1,0) * 1.0/windowWidth;
+    vec2 dy = vec2(0,1) * 1.0/windowHeight;
     vec2 UV = gl_FragCoord.xy / vec2(windowWidth, windowHeight);
-    color_out = texture(framebuffer, UV);
+
+    float z = pow(texture(depthbuffer, UV).r , 0x800);
+    z = abs(z*2-1)*1.2;
+    color_out = vec4(vec3(texture(depthbuffer, UV).r), 1.0);
 }

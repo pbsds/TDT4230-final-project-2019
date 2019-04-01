@@ -341,9 +341,9 @@ void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     glDepthMask(GL_FALSE); // read only
     for (NodeDistShader a : transparent_nodes)
         renderNode(a.node, a.s, nullptr, false);
+    renderNode(hudNode, nullptr); // rootNode defined in scene.hpp
     glDepthMask(GL_TRUE); // read write
 
-    renderNode(hudNode, nullptr); // rootNode defined in scene.hpp
   
     // render framebuffer to window
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
