@@ -32,5 +32,3 @@
 *.app
 
 build/
-
-res/textures/*.png
