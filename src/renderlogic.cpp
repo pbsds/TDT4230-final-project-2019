@@ -111,6 +111,8 @@ void initRenderer(GLFWwindow* window, int windowWidth, int windowHeight) {
     GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, drawBuffers);
 
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cerr << (glCheckFramebufferStatus(GL_FRAMEBUFFER)) << endl;
         throw 1;
