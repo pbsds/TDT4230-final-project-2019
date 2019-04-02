@@ -28,7 +28,7 @@ vec3 cameraUpward = vec3(0, 0, 1);
 
 const size_t N_GRASS = 150;
 const size_t N_TREES = 30;
-const size_t DISPLACEMENT = 40;
+const size_t DISPLACEMENT = 30;
 const vec2 plane_movement = {0.5, 0.1};
 
 SceneNode* rootNode;
@@ -180,6 +180,7 @@ void init_scene(CommandLineOptions options) {
     
     glClearColor(0.05, 0.1, 0.15, 1.0);
 
+    // sun
     lightNode[0]->position = {-600, 1400, 800};
     lightNode[0]->position = {-600, 0, 800};
     lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0); // the color of the first light affects the emissive component aswell
@@ -244,10 +245,7 @@ void step_scene(double timeDelta) {
     
     cout << "td: " << timeDelta << " " << 1/timeDelta << endl;
     
-    
     if (boxNode) boxNode->rotation.z += timeDelta;
-
-    //carNode->rotation.x = glm::sin(timeAcc*2);
     
     {
         vec3 o = carNode->position;
@@ -274,9 +272,9 @@ void step_scene(double timeDelta) {
         carNode->rotation.y =  glm::asin(((frh+brh)-(flh+blh)) / 2 / 60);
         carNode->position.z = (frh+flh+blh+brh)/4.0;
     }
-    
+
+    // scroll the field and all objects "stuck" to it
     plainNode->uvOffset -= timeDelta * plane_movement;
-    
     for (SceneNode* node : movingNodes) {
         node->position += vec3(plane_movement * (timeDelta*1000/3), 0.0);
         if (node->position.x > 1000.0) node->position.x -= 1000.0;
