@@ -32,9 +32,6 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
-    // Set default colour after clearing the colour buffer
-    glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
-
     int w, h;
     glfwGetWindowSize(window, &w, &h);
     

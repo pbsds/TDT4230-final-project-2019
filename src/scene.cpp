@@ -3,6 +3,8 @@
 #include "sceneGraph.hpp"
 #include <GLFW/glfw3.h>
 #include <chrono>
+#include <vector>
+#include <ctgmath>
 #include <glad/glad.h>
 #include <iostream>
 #include <cstdlib>
@@ -17,6 +19,8 @@
 
 using std::cout;
 using std::endl;
+using std::vector;
+using std::fmod;
 typedef unsigned int uint;
 
 //vec3 cameraPosition = vec3(500, -100, 150);
@@ -184,8 +188,6 @@ void init_scene(CommandLineOptions options) {
     lightNode[0]->position = {-600, 1400, 800};
     lightNode[0]->position = {-600, 0, 800};
     lightNode[0]->attenuation = vec3(1.8, 0.0, 0.0); // the color of the first light affects the emissive component aswell
-    //lightNode[0]->light_color = vec3(0.3, 0.3, 0.9);
-    lightNode[0]->light_color = vec3(0.5, 0.5, 1.0);
     rootNode->children.push_back(lightNode[0]);
     
     // car spotlights
@@ -247,6 +249,59 @@ void step_scene(double timeDelta) {
     
     if (boxNode) boxNode->rotation.z += timeDelta;
     
+    
+    // time of day events
+    {
+        struct seq_t { double t; vec3 light_c; vec3 bg_c; bool has_headlights; };
+        static const vector<seq_t> sequence = {
+            { 0, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1}, // night
+            { 9, vec3(0.4 , 0.4 , 0.8), vec3(0.15, 0.15, 0.35), 1}, // dusk
+            {10, vec3(1.0 , 0.6 , 0.4), vec3(0.8 , 0.4 , 0.2 ), 1}, // sunrise
+            {11, vec3(0.9 , 0.7 , 0.5), vec3(0.8 , 0.6 , 0.2 ), 1}, // sunrise2
+            {12, vec3(0.85, 0.85, 0.9), vec3(0.3 , 0.5 , 0.8 ), 0}, // morning
+            {18, vec3(1.0 , 1.0 , 1.0), vec3(0.35, 0.6 , 0.9 ), 0}, // noon
+            {24, vec3(0.7 , 0.9 , 1.0), vec3(0.3 , 0.5 , 0.8 ), 0}, // evening
+            {25, vec3(0.9 , 0.7 , 0.5), vec3(0.8 , 0.6 , 0.2 ), 0}, // sundown
+            {26, vec3(1.0 , 0.6 , 0.4), vec3(0.8 , 0.4 , 0.2 ), 1}, // sunset
+            {27, vec3(0.5 , 0.5 , 0.8), vec3(0.35, 0.15, 0.35), 1}, // dusk
+            {36, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1}, // night
+        };
+        assert(sequence.front().light_c == sequence.back().light_c);
+        assert(sequence.front().bg_c    == sequence.back().bg_c);
+        static const double t_max = sequence.back().t;
+        static const size_t seq_size = sequence.size();
+        static size_t /*current*/ seq_pos = 0;
+        
+        double t = fmod(timeAcc, t_max);
+        while (sequence[(seq_pos+1) % seq_size].t < t || sequence[seq_pos].t > t)
+            seq_pos = (seq_pos+1) % seq_size;
+        const seq_t& seq_a = sequence[seq_pos];
+        const seq_t& seq_b = sequence[(seq_pos+1) % seq_size];
+        double /*interpolation */f/*actor*/ = (t - seq_a.t) / (seq_b.t - seq_a.t);
+        lightNode[0]->light_color = vec3(seq_a.light_c * (1-f) + seq_b.light_c * f);
+        vec3 bg_color             = vec3(seq_a.bg_c    * (1-f) + seq_b.bg_c    * f);
+        
+        glClearColor(bg_color.r, bg_color.g, bg_color.b, 1.0f);
+        
+        /*interpolation */f/*actor*/ = t/t_max;
+        
+        // move sun
+        lightNode[0]->position = vec3(-600, 000, 800) * (1-f) + vec3(1600, 1000, 800) * f;
+        
+        // enable/disable headlights
+        lightNode[1]->light_color = (seq_a.has_headlights) ? vec3(0.7, 0.7, 0.5) : vec3(0);
+        lightNode[2]->light_color = (seq_a.has_headlights) ? vec3(0.7, 0.7, 0.5) : vec3(0);
+        lightNode[5]->light_color = (seq_a.has_headlights) ? vec3(0.7, 0.7, 0.5) : vec3(0);
+        lightNode[6]->light_color = (seq_a.has_headlights) ? vec3(0.7, 0.7, 0.5) : vec3(0);
+        
+        //lightNode[0]->light_color = vec3(0.3, 0.3, 0.9);
+        //lightNode[0]->light_color = vec3(0.5, 0.5, 1.0);
+        //lightNode[0]->light_color = vec3(0.8, 0.7, 0.3);
+        //lightNode[0]->light_color = vec3(1.0, 0.9, 0.8);
+        
+        
+    }
+    // car rotation
     {
         vec3 o = carNode->position;
         o.x += plainNode->uvOffset.x*1000/3;
