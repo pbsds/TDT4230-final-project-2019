@@ -1,16 +1,16 @@
 #/usr/bin/env bash
 here="$(pwd)"
 
-echo Building report_combined.md...
+echo Building log_combined.md...
 (
-	cat report_part1_intro.md;          echo;
-	cat report_part2_hills.md;          echo;
-	cat report_part3_models.md;         echo;
-	cat report_part4_optimizations.md;  echo;
-	cat report_part5_scene.md;          echo;
-	cat report_part6_effect.md;         echo;
-	cat report_part7_daylight.md;       echo;
-) | sed -e "s/ i / I /g" | sed -e "s/ i'm / I'm /g" > report_combined.md
+	cat log_part1_intro.md;          echo;
+	cat log_part2_hills.md;          echo;
+	cat log_part3_models.md;         echo;
+	cat log_part4_optimizations.md;  echo;
+	cat log_part5_scene.md;          echo;
+	cat log_part6_effect.md;         echo;
+	cat log_part7_daylight.md;       echo;
+) | sed -e "s/ i / I /g" | sed -e "s/ i'm / I'm /g" > log_combined.md
 
 #ENGINE=pdflatex
 #ENGINE=lualatex

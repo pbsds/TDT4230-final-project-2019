@@ -1,6 +1,6 @@
-% TDT4230 - Final assignment
+% TDT4230 - Final assignment log
 % Peder Berbebakken Sundt
-% insert date here
+% 4'th of april 2019
 
 \newpage
 
