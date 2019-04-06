@@ -27,6 +27,9 @@ uniform vec3 specular_color;
 uniform vec3 emissive_color;
 uniform vec3 backlight_color;
 
+uniform vec3 fog_color;
+uniform float fog_strength;
+
 uniform bool isIlluminated;
 uniform bool isTextured;
 uniform bool isVertexColored;
@@ -138,7 +141,15 @@ vec3 phong(vec3 basecolor, vec3 nnormal) {
     return basecolor + specular_color * specular_component;
 }
 
+const float near = 0.1;
+const float far  = 5000.0;
+float linearDepth() {
+    float z = gl_FragCoord.z * 2.0 - 1.0;
+    return (2.0 * near * far) / (far + near - z * (far - near));
+}
+
 void main() {
+
     vec3 nnormal = get_nnormal(); // normalized normal
     vec4 c = vec4(vec3(1.0), opacity);
     if (isVertexColored)    c *= color;
@@ -152,8 +163,9 @@ void main() {
     }
     if (backlight_strength > 0.05)
         c.rgb += backlight_color * clamp((dot(normalize(vertex), nnormal) + backlight_strength) / backlight_strength, 0, 1);
-    //c.rgb = diffuse_color;
-    //c.rgb = emissive_color;
-    //c.rgb = specular_color;
+
+    float fog = linearDepth()/1500;
+    c.rgb = mix(c.rgb, fog_color, pow(fog,1.2)*fog_strength);
+    
     color_out = c;
 }

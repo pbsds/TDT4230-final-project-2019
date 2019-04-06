@@ -30,6 +30,9 @@ sf::SoundBuffer* buffer;
 Gloom::Shader* current_shader = nullptr;
 Gloom::Shader* prev_shader = nullptr; // The last shader to glDrawElements
 
+// uniforms in the scene
+vec3  fog_color = vec3(0);
+float fog_strength = 0;
 
 // the framebuffer we render the scene to before post-processing
 GLuint framebufferID = 0;
@@ -246,14 +249,18 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
         case GEOMETRY:
             if (transparent_nodes!=nullptr && node->has_transparancy()) {
                 // defer to sorted pass later on
-                //transparent_nodes->emplace_back(node, s, glm::length(vec3(node->MVP[3])));
-                //transparent_nodes->push_back({node, s, glm::length(vec3(node->MVP[3]))});
                 transparent_nodes->emplace_back(node, s, glm::length(vec3(node->MVP*vec4(0,0,0,1))));
-                //transparent_nodes->push_back({node, s, glm::length(vec3(node->MVP*vec4(0,0,0,1)))});
             }
             else if(node->vertexArrayObjectID != -1) {
                 if (node->opacity <= 0.05) break;
-                // load uniforms
+                
+                // load scene uniforms
+                if (shader_changed) { // guaranteed at start of every frame, due to post_shader
+                    glUniform3fv(s->location("fog_color"), 1, glm::value_ptr(fog_color));
+                    glUniform1f( s->location("fog_strength"), fog_strength);
+                }
+                
+                // load material uniforms
                 um4fv(MVP);
                 um4fv(MV);
                 um4fv(MVnormal);
