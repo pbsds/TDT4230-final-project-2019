@@ -41,7 +41,12 @@ option (SFML_BUILD_NETWORK OFF)
 add_subdirectory(lib/SFML)
 
 # assimp
-set(BUILD_ASSIMP_TOOLS  ON)
+set(BUILD_ASSIMP_TOOLS  OFF)
+set(ASSIMP_BUILD_ASSIMP_TOOLS  OFF)
+set(ASSIMP_BUILD_SAMPLES  OFF)
+set(ASSIMP_BUILD_TESTS  OFF)
+set(ASSIMP_COVERALLS  OFF)
+set(ASSIMP_NO_EXPORT  ON)
 set(ASSIMP_BUILD_STATIC_LIB ON)
 add_subdirectory(lib/assimp)
 link_directories("lib/assimp/build/code")
