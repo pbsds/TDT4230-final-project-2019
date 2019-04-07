@@ -30,10 +30,6 @@ sf::SoundBuffer* buffer;
 Gloom::Shader* current_shader = nullptr;
 Gloom::Shader* prev_shader = nullptr; // The last shader to glDrawElements
 
-// uniforms in the scene
-vec3  fog_color = vec3(0);
-float fog_strength = 0;
-
 // the framebuffer we render the scene to before post-processing
 GLuint framebufferID = 0;
 GLuint framebufferTextureID = 0;

@@ -165,7 +165,7 @@ void main() {
         c.rgb += backlight_color * clamp((dot(normalize(vertex), nnormal) + backlight_strength) / backlight_strength, 0, 1);
 
     float fog = linearDepth()/1500;
-    c.rgb = mix(c.rgb, fog_color, pow(fog,1.2)*fog_strength);
+    if (fog_strength > 0.05) c.rgb = mix(c.rgb, fog_color, pow(fog,1.2)*fog_strength);
     
     color_out = c;
 }

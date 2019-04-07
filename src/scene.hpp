@@ -9,6 +9,9 @@ extern SceneNode* rootNode;
 extern SceneNode* hudNode;
 extern SceneNode* lightNode[N_LIGHTS];
 
+extern vec3  fog_color;
+extern float fog_strength;
+
 extern glm::vec3 cameraPosition;
 extern glm::vec3 cameraLookAt;
 extern glm::vec3 cameraUpward;

@@ -30,6 +30,9 @@ vec3 cameraPosition = vec3(420, -120, 190);
 vec3 cameraLookAt = vec3(460, 220, 0);
 vec3 cameraUpward = vec3(0, 0, 1);
 
+vec3  fog_color = vec3(1.0);
+float fog_strength = 0;
+
 const size_t N_GRASS = 150;
 const size_t N_TREES = 30;
 const size_t DISPLACEMENT = 30;
@@ -252,19 +255,20 @@ void step_scene(double timeDelta) {
     
     // time of day events
     {
-        struct seq_t { double t; vec3 light_c; vec3 bg_c; bool has_headlights; };
+        struct seq_t { double t; vec3 light_c; vec3 bg_c; bool has_headlights; vec3 fog_c; float fog; };
         static const vector<seq_t> sequence = {
-            { 0, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1}, // night
-            { 9, vec3(0.4 , 0.4 , 0.8), vec3(0.15, 0.15, 0.35), 1}, // dusk
-            {10, vec3(1.0 , 0.6 , 0.4), vec3(0.8 , 0.4 , 0.2 ), 1}, // sunrise
-            {11, vec3(0.9 , 0.7 , 0.5), vec3(0.8 , 0.6 , 0.2 ), 1}, // sunrise2
-            {12, vec3(0.85, 0.85, 0.9), vec3(0.3 , 0.5 , 0.8 ), 0}, // morning
-            {18, vec3(1.0 , 1.0 , 1.0), vec3(0.35, 0.6 , 0.9 ), 0}, // noon
-            {24, vec3(0.7 , 0.9 , 1.0), vec3(0.3 , 0.5 , 0.8 ), 0}, // evening
-            {25, vec3(0.9 , 0.7 , 0.5), vec3(0.8 , 0.6 , 0.2 ), 0}, // sundown
-            {26, vec3(1.0 , 0.6 , 0.4), vec3(0.8 , 0.4 , 0.2 ), 1}, // sunset
-            {27, vec3(0.5 , 0.5 , 0.8), vec3(0.35, 0.15, 0.35), 1}, // dusk
-            {36, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1}, // night
+            { 0, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1, vec3(0.2 , 0.2 , 0.7), 0.0}, // night
+            { 1, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1, vec3(0.2 , 0.2 , 0.7), 0.6}, // night
+            { 9, vec3(0.4 , 0.4 , 0.8), vec3(0.15, 0.15, 0.35), 1, vec3(0.5 , 0.5 , 0.8), 0.7}, // dusk
+            {10, vec3(1.0 , 0.6 , 0.4), vec3(0.8 , 0.4 , 0.2 ), 1, vec3(1.0 , 0.7 , 0.6), 0.8}, // sunrise
+            {11, vec3(0.9 , 0.7 , 0.5), vec3(0.8 , 0.6 , 0.2 ), 1, vec3(1.0 , 0.85, 0.7), 0.9}, // sunrise2
+            {12, vec3(0.85, 0.85, 0.9), vec3(0.3 , 0.5 , 0.8 ), 0, vec3(0.85, 0.85, 0.9), 0.8}, // morning
+            {18, vec3(1.0 , 1.0 , 1.0), vec3(0.35, 0.6 , 0.9 ), 0, vec3(1.0 , 1.0 , 1.0), 0.0}, // noon
+            {24, vec3(0.7 , 0.9 , 1.0), vec3(0.3 , 0.5 , 0.8 ), 0, vec3(1.0 , 1.0 , 1.0), 0.0}, // evening
+            {25, vec3(0.9 , 0.7 , 0.5), vec3(0.8 , 0.6 , 0.2 ), 0, vec3(1.0 , 1.0 , 1.0), 0.0}, // sundown
+            {26, vec3(1.0 , 0.6 , 0.4), vec3(0.8 , 0.4 , 0.2 ), 1, vec3(1.0 , 1.0 , 1.0), 0.0}, // sunset
+            {27, vec3(0.5 , 0.5 , 0.8), vec3(0.35, 0.15, 0.35), 1, vec3(1.0 , 1.0 , 1.0), 0.0}, // dusk
+            {36, vec3(0.2 , 0.2 , 0.7), vec3(0.05, 0.1 , 0.15), 1, vec3(1.0 , 1.0 , 1.0), 0.0}, // night
         };
         assert(sequence.front().light_c == sequence.back().light_c);
         assert(sequence.front().bg_c    == sequence.back().bg_c);
@@ -272,15 +276,20 @@ void step_scene(double timeDelta) {
         static const size_t seq_size = sequence.size();
         static size_t /*current*/ seq_pos = 0;
         
-        double t = fmod(timeAcc, t_max);
+        double t = fmod(timeAcc+34, t_max);
         while (sequence[(seq_pos+1) % seq_size].t < t || sequence[seq_pos].t > t)
             seq_pos = (seq_pos+1) % seq_size;
         const seq_t& seq_a = sequence[seq_pos];
         const seq_t& seq_b = sequence[(seq_pos+1) % seq_size];
-        double /*interpolation */f/*actor*/ = (t - seq_a.t) / (seq_b.t - seq_a.t);
-        lightNode[0]->light_color = vec3(seq_a.light_c * (1-f) + seq_b.light_c * f);
-        vec3 bg_color             = vec3(seq_a.bg_c    * (1-f) + seq_b.bg_c    * f);
         
+        double /*interpolation */f/*actor*/ = (t - seq_a.t) / (seq_b.t - seq_a.t);
+        
+        lightNode[0]->light_color = seq_a.light_c * (1-f) + seq_b.light_c * f;
+        vec3 bg_color             = seq_a.bg_c    * (1-f) + seq_b.bg_c    * f;
+        fog_color                 = seq_a.fog_c   * (1-f) + seq_b.fog_c   * f;
+        fog_strength              = seq_a.fog     * (1-f) + seq_b.fog     * f;
+        
+        bg_color = glm::mix(bg_color, fog_color, fog_strength);
         glClearColor(bg_color.r, bg_color.g, bg_color.b, 1.0f);
         
         /*interpolation */f/*actor*/ = t/t_max;
