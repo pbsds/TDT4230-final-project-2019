@@ -1,0 +1,33 @@
+digraph asd {
+	//rankdir=LR;
+	dpi=600;
+	ratio=0.4;
+	node [fontname=arial, shape=rectangle, style=filled, fillcolor="#ddddee"]
+	normal       [ label="compute_normal()" ]
+	base         [ label="vec4(1, 1, 1, object_opacity);"]
+	vertex_color [ label="vertex_color" ]
+	texture      [ label="texture(diffuse_texture, UV)" ]
+	invert       [ label="if (inverted)\l    color.rgb = 1 - color.rgb" ]
+	phong        [ label="color = phong(color)" ]
+	reflecton    [ label="reflection()" ]
+	fog          [ label="linearDepth() * fog_color" ]
+	rim          [ label="compute_rim_light()" ]
+	multiply [shape=ellipse, fillcolor = "#ffccaa"]
+	out      [shape=ellipse, fillcolor = "#ccffaa"]
+	
+	normal       -> phong;
+	normal       -> reflecton;
+	normal       -> rim;
+	
+	base         -> multiply;
+	vertex_color -> multiply [label="if(has_vert_colors)"];
+	texture      -> multiply [label="if(has_texture)"];
+	
+	multiply     -> invert;
+	invert       -> phong;
+	
+	rim          -> out [label="mix"];
+	phong        -> out [label="mix"];
+	reflecton    -> out [label="mix"];
+	fog          -> out [label="mix"];
+}

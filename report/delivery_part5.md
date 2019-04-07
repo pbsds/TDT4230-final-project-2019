@@ -1,7 +1,7 @@
 # Appendix
 
 ![
-    The seqmented pane with the cobble texture and normal map
+    The seqmented pane with the cobble texture and normal map and lighting applied to it.
 ](images/0-base.png){#fig:img-base}
 
 ![
@@ -174,3 +174,10 @@ bool shader_changed = s != prev_s;
 ![
     The same scene, during the day. Spotlights have been turned off.
 ](images/26-day.png){#fig:img-day}
+
+![
+    The early-morning scene with some strong fog applied. The code was later changed to have the fog affect the background color as well.
+](images/27-fog.png){#fig:img-fog}
+
+```{.dot include="images/effect-order.dot" caption="A high-level graph representing the fragment shader for the scene" #fig:effect-order}
+```

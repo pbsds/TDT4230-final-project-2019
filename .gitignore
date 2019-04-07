@@ -33,5 +33,6 @@
 
 build/
 report/pd-images/
-report/report_combined.md
-report/report_combined_out.pdf
+report/*_combined.md
+report/*_combined.md5_hash
+report/*_combined_out.pdf

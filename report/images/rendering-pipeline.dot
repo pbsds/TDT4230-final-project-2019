@@ -2,7 +2,7 @@ digraph asd {
 	//rankdir=LR;
 	dpi=600;
 	ratio=0.55;
-	node [fontname=arial, shape=rectangle, style=filled, fillcolor="#dddddd"]
+	node [fontname=arial, shape=rectangle, style=filled, fillcolor="#ddddff"]
 	null [ label="updateNodes(rootNode);" ]
 	0 [ label="renderNodes(rootNode, only_opaque=true);" ]
 	1 [ label="std::sort(transparent_nodes);" ]
