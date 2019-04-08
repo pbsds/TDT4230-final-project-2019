@@ -239,7 +239,8 @@ void renderNode(SceneNode* node, Gloom::Shader* parent_shader, vector<NodeDistSh
     #define u3fv(x)  cache(x) glUniform3fv( s->location(#x), 1, glm::value_ptr(node->x)); }
     #define u1f(x)   cache(x) glUniform1f(  s->location(#x), node->x); }
     #define u1ui(x)  cache(x) glUniform1ui( s->location(#x), node->x); }
-    #define ubtu(n,i,x) init_cache(x) if(node->i) { if_cache(x) glBindTextureUnit(n, node->x); } } else cached_##x = -1;
+    //#define ubtu(n,i,x) init_cache(x) if(node->i) { if_cache(x) glBindTextureUnit(n, node->x); } } else cached_##x = -1;
+    #define ubtu(n,i,x) init_cache(x) if(node->i) { if_cache(x) glActiveTexture(GL_TEXTURE0+n); glBindTexture(GL_TEXTURE_2D, node->x); } } else cached_##x = -1;
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -367,8 +368,12 @@ void renderFrame(GLFWwindow* window, int windowWidth, int windowHeight) {
     glUniform1f(post_shader->location("time"), t);
     glUniform1ui(post_shader->location("windowWidth"), windowWidth);
     glUniform1ui(post_shader->location("windowHeight"), windowHeight);
-    glBindTextureUnit(0, framebufferTextureID);
-    glBindTextureUnit(1, framebufferDepthTextureID);
+    //glBindTextureUnit(0, framebufferTextureID);
+    //glBindTextureUnit(1, framebufferDepthTextureID);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, framebufferTextureID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, framebufferDepthTextureID);
     glBindVertexArray(postVAO);
     glDrawElements(GL_TRIANGLES, 6 /*vertices*/, GL_UNSIGNED_INT, nullptr);
     prev_shader = post_shader;
